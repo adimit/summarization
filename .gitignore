@@ -1,0 +1,4 @@
+/target/
+/resources/
+test.txt
+*.log
