@@ -14,11 +14,11 @@ public class Summarizer {
 		// get file set
 
 		// make documents
-		final List<Document> docs = new ArrayList<Document>();
+		final List<Document> docs = new ArrayList<>();
 		try {
-			for (int i = 0; i<args.length; i++) {
-				log.debug("Adding {}", args[i]);
-				docs.add(new Document(new File(args[i])));
+			for (String arg:args) {
+				log.debug("Adding {}", arg);
+				docs.add(new Document(new File(arg)));
 			}
 		} catch (DocumentInitializationException die) {
 			throw new RuntimeException(die);
@@ -39,5 +39,4 @@ public class Summarizer {
 		}
 		// output
 	}
-
 }
