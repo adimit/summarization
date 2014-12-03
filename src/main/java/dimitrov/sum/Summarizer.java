@@ -20,19 +20,23 @@ public class Summarizer {
 				log.debug("Adding {}", args[i]);
 				docs.add(new Document(new File(args[i])));
 			}
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+		} catch (DocumentInitializationException die) {
+			throw new RuntimeException(die);
 		}
 		
 		// analyse documents
 		for (Document doc:docs) {
 			try {
+				log.debug("Analyzing {}", doc.getName());
 				doc.analyze();
+				log.debug("Summarizing {}", doc.getName());
+				// summarise documents
+				doc.summarize();
+				log.debug("Finished analysis of {}", doc.getName());
 			} catch (AnalysisEngineProcessException aee) {
 				throw new RuntimeException(aee);
 			}
 		}
-		// summarise documents
 		// output
 	}
 
