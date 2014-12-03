@@ -14,8 +14,10 @@ public class Document {
 	private final JCas cas;
 	private final SummarizationContext cx;
 	private final AnalysisEngine opennlpae;
-	
+	private final String name;
+
 	public Document(File f) throws IOException, ContextInitializationException, ResourceInitializationException	{
+		this.name = f.getName();
 		cx = SummarizationContext.getInstance();
 		opennlpae = cx.getOpenNLPAE();
 		cas = opennlpae.newJCas();
@@ -31,5 +33,9 @@ public class Document {
 	public String summarize() {
 		
 		return null;
+	}
+
+	public String getName() {
+		return this.name;
 	}
 }
