@@ -17,7 +17,7 @@ public class Summarizer {
 		final List<Document> docs = new ArrayList<>();
 		try {
 			for (String arg:args) {
-				log.debug("Adding {}", arg);
+				log.info("Adding {}", arg);
 				docs.add(new Document(new File(arg)));
 			}
 		} catch (DocumentInitializationException die) {
@@ -27,12 +27,12 @@ public class Summarizer {
 		// analyse documents
 		for (Document doc:docs) {
 			try {
-				log.debug("Analyzing {}", doc.getName());
+				log.info("Analyzing {}", doc.getName());
 				doc.analyze();
-				log.debug("Summarizing {}", doc.getName());
+				log.info("Summarizing {}", doc.getName());
 				// summarise documents
 				doc.summarize();
-				log.debug("Finished analysis of {}", doc.getName());
+				log.info("Finished analysis of {}", doc.getName());
 			} catch (AnalysisEngineProcessException aee) {
 				throw new RuntimeException(aee);
 			}
