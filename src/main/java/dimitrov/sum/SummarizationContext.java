@@ -31,35 +31,40 @@ public final class SummarizationContext {
 	
 	private static final Logger log = LoggerFactory.getLogger(SummarizationContext.class);
 		
-	private SummarizationContext() throws IOException, ResourceInitializationException, InvalidXMLException 
-	{
-		log.info("Installing OpenNLP PEAR.");
-		final ResourceManager rMgr =
-				UIMAFramework.newDefaultResourceManager();
-		final XMLInputSource in =
-				new XMLInputSource(getClass().getResource(openNLPDesc));
+	private SummarizationContext() throws ContextInitializationException {
 		log.info("Creating OpenNLP AE.");
-		final ResourceSpecifier specifier =
-				UIMAFramework.getXMLParser().parseResourceSpecifier(in);
-		
-		opennlp = UIMAFramework.produceAnalysisEngine(specifier, rMgr, null);
+		try {
+			final ResourceManager rMgr =
+					UIMAFramework.newDefaultResourceManager();
+			final XMLInputSource in =
+					new XMLInputSource(getClass().getResource(openNLPDesc));
+			final ResourceSpecifier specifier =
+					UIMAFramework.getXMLParser().parseResourceSpecifier(in);
+
+			opennlp = UIMAFramework.produceAnalysisEngine(specifier, rMgr, null);
+		} catch (IOException ioe) {
+			throw new ContextInitializationException("Error accessing " + openNLPDesc,ioe);
+		} catch (InvalidXMLException ixe) {
+			throw new ContextInitializationException("Invalid XML in " + openNLPDesc,ixe);
+		} catch (ResourceInitializationException rie) {
+			throw new ContextInitializationException("Failed to produce analysis engine.",rie);
+		}
 		log.info("Finished initializing Context Singleton");
 	}
 	
 	/**
-	 * Retrieve the single instance of this class. This method is thread-safe.
-	 * 
+	 * Retrieve the single instance of this class. This method is thread-safe,
+	 * but may block during creation of the analysis engines, which may be
+	 * lengthy. However, they are only created once, during the first call
+	 * to getInstance.
+	 *
 	 * @return SummarizationContext singleton.
-	 * @throws Exception Cheap way out. Detailed exception handling NYI.
+	 * @throws dimitrov.sum.ContextInitializationException
 	 */
-	public static synchronized SummarizationContext getInstance() 
+	public static synchronized SummarizationContext getInstance()
 			throws ContextInitializationException {
 		if (instance == null) {
-			try {
-				instance = new SummarizationContext();
-			} catch (Exception e) {
-				throw new ContextInitializationException("Failed to initialize Context.",e);
-			}
+			instance = new SummarizationContext();
 		}
 		return instance;
 	}
