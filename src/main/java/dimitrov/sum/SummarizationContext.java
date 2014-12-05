@@ -17,10 +17,12 @@ import org.slf4j.LoggerFactory;
  * @author aleks
  *
  * We use a Singleton pattern to ensure the expensive models only get loaded
- * once, and are easily accessible by everybody.
+ * once, and are easily accessible by everybody. This goal also necessicates that
+ * the class be final — if you want to load additional models, go make your won singleton.
  * 
  * Use the static method .getInstance() to retrieve the Singleton, and use its
- * methods to obtain the analysis engines.
+ * non-static methods to obtain the analysis engines.
+ *
  */
 public final class SummarizationContext {
 
@@ -64,6 +66,7 @@ public final class SummarizationContext {
 	public static synchronized SummarizationContext getInstance()
 			throws ContextInitializationException {
 		if (instance == null) {
+			log.debug("Instantiating new SummarizationContext.");
 			instance = new SummarizationContext();
 		}
 		return instance;
