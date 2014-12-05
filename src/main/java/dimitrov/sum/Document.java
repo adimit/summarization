@@ -14,6 +14,7 @@ public class Document {
 	private final JCas cas;
 	private final SummarizationContext cx;
 	private final AnalysisEngine opennlpae;
+	private final AnalysisEngine tfidfae;
 	private final String name;
 
 	public Document(File f) throws DocumentInitializationException {
@@ -21,6 +22,7 @@ public class Document {
 			this.name = f.getName();
 			cx = SummarizationContext.getInstance();
 			opennlpae = cx.getOpenNLPAE();
+			tfidfae = cx.getTfidfAE();
 			cas = opennlpae.newJCas();
 			/* FIXME: we just take the default charset,
 			 * but this should be configurable. */
@@ -36,6 +38,7 @@ public class Document {
 
 	public void analyze() throws AnalysisEngineProcessException {
 		opennlpae.process(cas);
+		tfidfae.process(cas);
 	}
 
 	public String summarize() {

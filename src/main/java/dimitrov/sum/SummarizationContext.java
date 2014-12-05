@@ -28,30 +28,42 @@ public final class SummarizationContext {
 
 	private static SummarizationContext instance = null;
 	private final AnalysisEngine opennlp;
+	private final AnalysisEngine tfidfAE;
 	
 	private static final String openNLPDesc = "/opennlp/OpenNlpTextAnalyzer.xml";
+	private static final String tfidfDesc = "/sum/TFIDFAE.xml";
 	
 	private static final Logger log = LoggerFactory.getLogger(SummarizationContext.class);
 		
 	private SummarizationContext() throws ContextInitializationException {
+		final ResourceManager rMgr =
+				UIMAFramework.newDefaultResourceManager();
+
 		log.info("Creating OpenNLP AE.");
+		opennlp = produceAE("OpenNLP", openNLPDesc, rMgr);
+
+		log.info("Creating TF/IDF AE.");
+		tfidfAE = produceAE("TF/IDF", tfidfDesc, rMgr);
+
+		log.info("Finished initializing Context Singleton");
+
+	}
+
+	private AnalysisEngine produceAE(final String name, final String descriptor, final ResourceManager rMgr)
+			throws ContextInitializationException {
 		try {
-			final ResourceManager rMgr =
-					UIMAFramework.newDefaultResourceManager();
 			final XMLInputSource in =
-					new XMLInputSource(getClass().getResource(openNLPDesc));
+					new XMLInputSource(getClass().getResource(descriptor));
 			final ResourceSpecifier specifier =
 					UIMAFramework.getXMLParser().parseResourceSpecifier(in);
-
-			opennlp = UIMAFramework.produceAnalysisEngine(specifier, rMgr, null);
+			return UIMAFramework.produceAnalysisEngine(specifier, rMgr, null);
 		} catch (IOException ioe) {
-			throw new ContextInitializationException("Error accessing " + openNLPDesc,ioe);
+			throw new ContextInitializationException("Error accessing " + descriptor + " while building " + name, ioe);
 		} catch (InvalidXMLException ixe) {
-			throw new ContextInitializationException("Invalid XML in " + openNLPDesc,ixe);
+			throw new ContextInitializationException("Invalid XML in " + descriptor + " while building " + name, ixe);
 		} catch (ResourceInitializationException rie) {
-			throw new ContextInitializationException("Failed to produce analysis engine.",rie);
+			throw new ContextInitializationException("Failed to produce AE " + name, rie);
 		}
-		log.info("Finished initializing Context Singleton");
 	}
 	
 	/**
@@ -76,5 +88,7 @@ public final class SummarizationContext {
 		return opennlp;
 	}
 
+	public AnalysisEngine getTfidfAE() {
+		return tfidfAE;
+	}
 }
-

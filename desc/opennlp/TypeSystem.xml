@@ -45,6 +45,11 @@
 					<description>Part of speech</description>
 					<rangeTypeName>uima.cas.String</rangeTypeName>
 				</featureDescription>
+				<featureDescription>
+					<name>tfidf</name>
+					<description>term frequency/inverse document frequency</description>
+					<rangeTypeName>uima.cas.Double</rangeTypeName>
+				</featureDescription>
 			</features>
 		</typeDescription>
 
