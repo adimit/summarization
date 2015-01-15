@@ -31,7 +31,8 @@ import java.util.Iterator;
  */
 public class DocumentReader extends CollectionReader_ImplBase {
 
-    private static final String PARAM_INPUTDIR = "InputDirectory";
+    public static final String PARAM_INPUTDIR = "InputDirectory";
+
     private Iterator<File> fileIterator; // documents to process.
     private int totalFiles; // documents to process total count.
     private int progress; // documents already processed.
@@ -40,8 +41,15 @@ public class DocumentReader extends CollectionReader_ImplBase {
 
     @Override
     public void initialize() throws ResourceInitializationException {
+        log.info("Initializing Document Reader.");
+        final String inputDirParam = (String) getConfigParameterValue(PARAM_INPUTDIR);
+        if (inputDirParam == null) {
+            log.error("Couldn't find input directory parameter setting!");
+            throw new ResourceInitializationException(ResourceInitializationException.CONFIG_SETTING_ABSENT,
+                    new Object[] {PARAM_INPUTDIR});
+        }
         final File srcDirectory =
-                new File (((String) getConfigParameterValue(PARAM_INPUTDIR)).trim());
+                new File (inputDirParam.trim());
 
         if (!(srcDirectory.exists() && srcDirectory.isDirectory())) {
             throw new ResourceInitializationException(ResourceConfigurationException.DIRECTORY_NOT_FOUND,
@@ -56,6 +64,8 @@ public class DocumentReader extends CollectionReader_ImplBase {
         fileIterator = files.iterator();
         totalFiles = files.size();
         progress = 0;
+
+        log.debug("Found {} files to process.", totalFiles);
     }
 
     /**
@@ -127,6 +137,7 @@ public class DocumentReader extends CollectionReader_ImplBase {
      */
     @Override
     public boolean hasNext() throws IOException, CollectionException {
+        log.debug("DocumentReader.hasNext() is called.");
         if (fileIterator != null) {
             return fileIterator.hasNext();
         } else {
@@ -151,6 +162,7 @@ public class DocumentReader extends CollectionReader_ImplBase {
      */
     @Override
     public Progress[] getProgress() {
+        log.debug("DocumentReader.getProgress() is called.");
         return new Progress[] { new ProgressImpl(progress, totalFiles, Progress.ENTITIES) };
     }
 

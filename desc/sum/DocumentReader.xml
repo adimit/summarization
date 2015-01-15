@@ -21,17 +21,26 @@
                    the default system encoding will be used.  Note that this parameter
                    only applies if there is no CAS Initializer provided; otherwise,
                    it is the CAS Initializer's responsibility to deal with character
-                   encoding issues. </description>
+                   encoding issues.</description>
                 <type>String</type>
                 <multiValued>false</multiValued>
                 <mandatory>false</mandatory>
             </configurationParameter>
         </configurationParameters>
 
+        <configurationParameterSettings>
+            <nameValuePair>
+                <name>InputDirectory</name>
+                <value>
+                    <string>test</string>
+                </value>
+            </nameValuePair>
+        </configurationParameterSettings>
+
         <!-- We use the creatively named TypeSystem.xml from OpenNLP -->
         <typeSystemDescription>
           <imports>
-            <import name="TypeSystem.xml"/>
+            <import name="opennlp.TypeSystem"/>
           </imports>
         </typeSystemDescription>
 
