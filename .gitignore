@@ -1,4 +1,6 @@
-/target/
-/resources/
+/target
+/resources
+/activemq-data
 test.txt
 *.log
+/test
