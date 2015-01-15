@@ -1,5 +1,6 @@
 package dimitrov.sum.uima.ae;
 
+import dimitrov.sum.TermFrequencies;
 import dimitrov.sum.uima.Names;
 import opennlp.uima.util.AnnotatorUtil;
 import opennlp.uima.util.UimaUtil;
@@ -21,12 +22,14 @@ public class TFIDFAE extends CasAnnotator_ImplBase {
 
     private Type tokenType;
     private Feature tfidfFeature;
+    private TermFrequencies<String> tf;
 
     @Override
     public void initialize(UimaContext context) throws ResourceInitializationException {
         super.initialize(context);
         this.context = context;
         this.log = context.getLogger();
+        this.tf = new TermFrequencies<>();
     }
 
     /**
@@ -41,6 +44,7 @@ public class TFIDFAE extends CasAnnotator_ImplBase {
         final FSIndex<AnnotationFS> tokens = aCAS.getAnnotationIndex(tokenType);
 
         for (AnnotationFS token:tokens) {
+            tf.observe(token.getCoveredText());
             token.setDoubleValue(this.tfidfFeature, 0.1);
         }
     }
