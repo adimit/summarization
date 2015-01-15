@@ -1,8 +1,4 @@
-<configuration debug="true">
-    <!-- Listen to status changes in the logging framework and put them on the console. -->
-    <!--
-    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
-    -->
+<configuration debug="false">
     <contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
         <resetJUL>true</resetJUL>
     </contextListener>
@@ -21,9 +17,20 @@
         </encoder>
     </appender>
 
+    <appender name="activemq" class="ch.qos.logback.core.FileAppender">
+        <file>activemq.log</file>
+        <encoder>
+            <pattern>%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
     <root level="INFO">
         <appender-ref ref="STDOUT" />
     </root>
+
+    <logger name="dimitrov.sum" level="DEBUG" additivity="false">
+        <appender-ref ref="STDOUT" />
+    </logger>
 
     <!-- Logger for opennlp -->
     <logger name="opennlp.uima" level="INFO" additivity="false">
@@ -33,5 +40,25 @@
     <!-- Logger for UIMA -->
     <logger name="org.apache.uima" level="INFO" additivity="false">
         <appender-ref ref="UIMA" />
+    </logger>
+
+    <!-- ActiveMQ messages are generally distinct from UIMA messages, so they get their own logger. -->
+    <logger name="org.apache.activemq" level="INFO" additivity="false">
+        <appender-ref ref="activemq" />
+    </logger>
+
+    <!-- We only use the spring framework as part of the ActiveMQ setup process. -->
+    <logger name="org.springframework" level="INFO" additivity="false">
+        <appender-ref ref="activemq" />
+    </logger>
+
+    <!-- Likewise, dump all xbean stuff to ActiveMQ logs -->
+    <logger name="org.apache.xbean" level="INFO" additivity="false">
+        <appender-ref ref="activemq" />
+    </logger>
+
+    <!-- ActiveMQ uses some packages from eclipse's jetty. -->
+    <logger name="org.eclipse.jetty" level="INFO" additivity="false">
+        <appender-ref ref="activemq" />
     </logger>
 </configuration>
