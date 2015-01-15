@@ -1,8 +1,14 @@
 package dimitrov.sum;
 
 import java.io.IOException;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.uima.UIMAFramework;
+import org.apache.uima.aae.client.UimaAsynchronousEngine;
+import org.apache.uima.adapter.jms.client.BaseUIMAAsynchronousEngine_impl;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.resource.ResourceManager;
@@ -26,7 +32,10 @@ import org.slf4j.LoggerFactory;
  */
 public final class SummarizationContext {
 
+	// Singleton instance.
 	private static SummarizationContext instance = null;
+
+	private int documentCounter;
 	private final AnalysisEngine opennlp;
 	private final AnalysisEngine tfidfAE;
 	
@@ -34,10 +43,12 @@ public final class SummarizationContext {
 	private static final String tfidfDesc = "/sum/TFIDFAE.xml";
 	
 	private static final Logger log = LoggerFactory.getLogger(SummarizationContext.class);
-		
+
 	private SummarizationContext() throws ContextInitializationException {
 		final ResourceManager rMgr =
 				UIMAFramework.newDefaultResourceManager();
+
+		documentCounter = 0;
 
 		log.info("Creating OpenNLP AE.");
 		opennlp = produceAE("OpenNLP", openNLPDesc, rMgr);
@@ -46,7 +57,15 @@ public final class SummarizationContext {
 		tfidfAE = produceAE("TF/IDF", tfidfDesc, rMgr);
 
 		log.info("Finished initializing Context Singleton");
+	}
 
+	/**
+	 * Get a new document ID, guaranteed to be unique.
+	 *
+	 * @return new unique document ID.
+	 */
+	public synchronized int newDocumentId() {
+		return ++documentCounter;
 	}
 
 	private AnalysisEngine produceAE(final String name, final String descriptor, final ResourceManager rMgr)
@@ -83,7 +102,12 @@ public final class SummarizationContext {
 		}
 		return instance;
 	}
-	
+
+	/**
+	 * Produce the OpenNLP analysis engine.
+	 *
+	 * @return An {@link AnalysisEngine} instantiated with the OpenNLP descriptor.
+	 */
 	public AnalysisEngine getOpenNLPAE() {
 		return opennlp;
 	}
