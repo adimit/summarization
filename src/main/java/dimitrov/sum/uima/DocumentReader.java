@@ -1,5 +1,6 @@
 package dimitrov.sum.uima;
 
+import dimitrov.sum.UimaDeployer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
@@ -31,7 +32,7 @@ import java.util.Iterator;
  */
 public class DocumentReader extends CollectionReader_ImplBase {
 
-    public static final String PARAM_INPUTDIR = "InputDirectory";
+    private static final String PARAM_INPUTDIR = UimaDeployer.PROP_INPUT_DIRECTORY;
 
     private Iterator<File> fileIterator; // documents to process.
     private int totalFiles; // documents to process total count.

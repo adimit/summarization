@@ -9,7 +9,7 @@
         <vendor>Aleksandar Dimitrov</vendor>
         <configurationParameters>
             <configurationParameter>
-                <name>InputDirectory</name>
+                <name>inputDirectory</name>
                 <description>Directory containing input files</description>
                 <type>String</type>
                 <multiValued>false</multiValued>
@@ -30,7 +30,7 @@
 
         <configurationParameterSettings>
             <nameValuePair>
-                <name>InputDirectory</name>
+                <name>inputDirectory</name>
                 <value>
                     <string>test</string>
                 </value>
