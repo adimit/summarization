@@ -15,7 +15,7 @@ import org.apache.uima.util.Logger;
 /**
  * Created by aleks on 05/12/14.
  */
-public class TFIDFAE extends CasAnnotator_ImplBase {
+public class TermFrequencyAE extends CasAnnotator_ImplBase {
 
     protected UimaContext context;
     protected Logger log;
