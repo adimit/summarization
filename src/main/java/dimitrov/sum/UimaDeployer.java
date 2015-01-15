@@ -56,10 +56,6 @@ public class UimaDeployer {
 	private static final int DEFAULT_AS_META_TIMEOUT = 10;
     private static final int FS_HEAP_SIZE = 2000000;
 
-    private File outputDir = null;
-
-    private boolean logCas = false;
-
     /**
      * Start time of the processing - used to compute elapsed time.
      */
@@ -101,14 +97,12 @@ public class UimaDeployer {
         final CollectionReader collectionReader = UIMAFramework
                 .produceCollectionReader(collectionReaderDescription);
         uimaAsynchronousEngine.setCollectionReader(collectionReader);
-        uimaAsynchronousEngine.addStatusCallbackListener(new StatusCallbackListenerImpl());
+        uimaAsynchronousEngine.addStatusCallbackListener(new StatusCallbackListenerImpl(settings.outputDir));
 
         appCtx.put(UimaAsynchronousEngine.Timeout, settings.uimaAsTimeout);
         appCtx.put(UimaAsynchronousEngine.CpcTimeout, settings.uimaAsCpcTimeout);
         appCtx.put(UimaAsynchronousEngine.GetMetaTimeout, settings.uimaAsMetaTimeout);
         appCtx.put(UimaAsynchronousEngine.CasPoolSize, settings.uimaCasPoolSize);
-
-        this.outputDir = settings.outputDir;
 
         log.info("Deploying AE.");
         final long deployStart = System.currentTimeMillis();
@@ -192,6 +186,12 @@ public class UimaDeployer {
         System.exit(1);
     }
 
+    private static void croak(List<? extends Throwable> causes, String message) {
+        causes.forEach(Throwable::printStackTrace);
+        log.error(message);
+        System.exit(1);
+    }
+
     private static void croak(String message) {
         log.error(message);
         System.exit(1);
@@ -245,8 +245,14 @@ public class UimaDeployer {
      */
     private class StatusCallbackListenerImpl extends UimaAsBaseCallbackListener {
         int entityCount = 0;
-
         long size = 0;
+
+        private final File outputDir;
+
+        public StatusCallbackListenerImpl(final File outputDir) {
+            super();
+            this.outputDir = outputDir;
+        }
 
         /**
          * Called when the initialization is completed.
@@ -255,26 +261,24 @@ public class UimaDeployer {
          */
         @Override
         public void initializationComplete(EntityProcessStatus aStatus) {
-            if (aStatus != null && aStatus.isException()) {
-                System.err.println("Error on getMeta call to remote service:");
-                List<Exception> exceptions = aStatus.getExceptions();
-                for (Exception exception : exceptions) {
-                    exception.printStackTrace();
-                }
-                System.err.println("Terminating Client...");
-                stop();
-
-            }
-            System.out.println("UIMA AS Service Initialization Complete");
+            maybeStopAndCroak(aStatus, "Error on getMeta call to remote service.");
+            log.info("UIMA AS Service Initialization Complete");
         }
+
+        /* On bad status, stop the engine, log an error, print stack traces, and die ungracefully. */
+        private void maybeStopAndCroak(final EntityProcessStatus aStatus, final String message) {
+            if (aStatus != null && aStatus.isException()) {
+                stop();
+                croak(aStatus.getExceptions(), message);
+            }
+        }
+
         private void stop() {
             try {
                 uimaAsynchronousEngine.stop();
             } catch( Exception e) {
                 e.printStackTrace();
             }
-            System.exit(0);
-
         }
 
         /**
@@ -284,31 +288,23 @@ public class UimaDeployer {
          */
         @Override
         public void collectionProcessComplete(EntityProcessStatus aStatus) {
-            if (aStatus != null && aStatus.isException()) {
-                System.err.println("Error on collection process complete call to remote service:");
-                List<Exception> exceptions = aStatus.getExceptions();
-                for (Exception exception : exceptions) {
-                    exception.printStackTrace();
-                }
-                System.err.println("Terminating Client...");
-                stop();
-            }
-            System.out.print("Completed " + entityCount + " documents");
+            maybeStopAndCroak(aStatus, "Error on collection process complete call to remote service:");
+
+            log.info("Completed {} document(s.)", entityCount);
             if (size > 0) {
-                System.out.print("; " + size + " characters");
+                log.info("Document(s) had {} characters.", size);
             }
-            System.out.println();
             long elapsedTime = System.nanoTime() / 1000000 - mStartTime;
-            System.out.println("Time Elapsed : " + elapsedTime + " ms ");
+            log.info("Time elapsed: {}ms ", elapsedTime);
 
             String perfReport = uimaAsynchronousEngine.getPerformanceReport();
             if (perfReport != null) {
-                System.out.println("\n\n ------------------ PERFORMANCE REPORT ------------------\n");
-                System.out.println(uimaAsynchronousEngine.getPerformanceReport());
+                log.info("\n\n ------------------ PERFORMANCE REPORT ------------------");
+                log.info(uimaAsynchronousEngine.getPerformanceReport());
+            } else {
+                log.warn("No performance report generated.");
             }
-            if (springContainerId == null) {
-                stop();
-            }
+            if (springContainerId == null) { stop(); }
         }
 
         /**
@@ -321,15 +317,9 @@ public class UimaDeployer {
          *          EntityProcessStatus that holds the status of all the events for aEntity
          */
         public void entityProcessComplete(CAS aCas, EntityProcessStatus aStatus) {
+            maybeStopAndCroak(aStatus, "Error on process CAS call to remote service:");
             if (aStatus != null) {
-                if (aStatus.isException()) {
-                    System.err.println("Error on process CAS call to remote service:");
-                    List<Exception> exceptions = aStatus.getExceptions();
-                    exceptions.forEach(java.lang.Exception::printStackTrace);
-                    System.err.println("Terminating Client...");
-                    stop();
-                }
-                if (logCas) {
+                if (log.isDebugEnabled()) {
                     String ip = "no IP";
                     List<ProcessTraceEvent> eList = aStatus.getProcessTrace().getEventsByComponentName("UimaEE", false);
                     for (ProcessTraceEvent event : eList) {
@@ -344,58 +334,55 @@ public class UimaDeployer {
                             Object value = casMap.get(casId);
                             if (value != null) {
                                 long start = (Long) value;
-                                System.out.println(ip + "\t" + start + "\t" + (current - start));
+                                log.debug("IP: {}\tStart: {}\tElapsed: {}", ip, start, (current - start));
                             }
                         }
                     }
 
                 } else {
-                    System.out.print(".");
                     if (0 == (entityCount + 1) % 50) {
-                        System.out.print((entityCount + 1) + " processed\n");
+                        log.info("{} processed.", (entityCount + 1));
                     }
                 }
             }
 
             // if output dir specified, dump CAS to XMI
-            if (outputDir != null) {
-                // try to retrieve the filename of the input file from the CAS
-                File outFile = null;
-                Type srcDocInfoType = aCas.getTypeSystem().getType(
-                        "org.apache.uima.examples.SourceDocumentInformation");
-                if (srcDocInfoType != null) {
-                    FSIterator<FeatureStructure> it = aCas.getIndexRepository().getAllIndexedFS(srcDocInfoType);
-                    if (it.hasNext()) {
-                        FeatureStructure srcDocInfoFs = it.get();
-                        Feature uriFeat = srcDocInfoType.getFeatureByBaseName("uri");
-                        Feature offsetInSourceFeat = srcDocInfoType.getFeatureByBaseName("offsetInSource");
-                        String uri = srcDocInfoFs.getStringValue(uriFeat);
-                        int offsetInSource = srcDocInfoFs.getIntValue(offsetInSourceFeat);
-                        File inFile;
-                        try {
-                            inFile = new File(new URL(uri).getPath());
-                            String outFileName = inFile.getName();
-                            if (offsetInSource > 0) {
-                                outFileName += ("_" + offsetInSource);
-                            }
-                            outFileName += ".xmi";
-                            outFile = new File(outputDir, outFileName);
-                        } catch (MalformedURLException e1) {
-                            // invalid URI, use default processing below
+            // try to retrieve the filename of the input file from the CAS
+            File outFile = null;
+            Type srcDocInfoType = aCas.getTypeSystem().getType(
+                    "org.apache.uima.examples.SourceDocumentInformation");
+            if (srcDocInfoType != null) {
+                FSIterator<FeatureStructure> it = aCas.getIndexRepository().getAllIndexedFS(srcDocInfoType);
+                if (it.hasNext()) {
+                    FeatureStructure srcDocInfoFs = it.get();
+                    Feature uriFeat = srcDocInfoType.getFeatureByBaseName("uri");
+                    Feature offsetInSourceFeat = srcDocInfoType.getFeatureByBaseName("offsetInSource");
+                    String uri = srcDocInfoFs.getStringValue(uriFeat);
+                    int offsetInSource = srcDocInfoFs.getIntValue(offsetInSourceFeat);
+                    File inFile;
+                    try {
+                        inFile = new File(new URL(uri).getPath());
+                        String outFileName = inFile.getName();
+                        if (offsetInSource > 0) {
+                            outFileName += ("_" + offsetInSource);
                         }
+                        outFileName += ".xmi";
+                        outFile = new File(outputDir, outFileName);
+                    } catch (MalformedURLException e1) {
+                        // invalid URI, use default processing below
                     }
                 }
-                if (outFile == null) {
-                    outFile = new File(outputDir, "doc" + entityCount);
+            }
+            if (outFile == null) {
+                outFile = new File(outputDir, "doc" + entityCount);
+            }
+            try {
+                try (FileOutputStream outStream = new FileOutputStream(outFile)) {
+                    XmiCasSerializer.serialize(aCas, outStream);
                 }
-                try {
-                    try (FileOutputStream outStream = new FileOutputStream(outFile)) {
-                        XmiCasSerializer.serialize(aCas, outStream);
-                    }
-                } catch (Exception e) {
-                    System.err.println("Could not save CAS to XMI file");
-                    e.printStackTrace();
-                }
+            } catch (Exception e) {
+                log.error("Could not save CAS to XMI file");
+                e.printStackTrace();
             }
 
             // update stats
