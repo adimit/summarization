@@ -309,12 +309,6 @@ public class UimaDeployer {
             if (springContainerId == null) {
                 stop();
             }
-            // stop the JVM. Dont stop here if running with -d (deploy) option.
-            // service must be first be undeployed before stop() is called. Otherwise,
-            // this process hangs
-            //  if ( springContainerId == null ) {
-            //  stop();
-            //}
         }
 
         /**
