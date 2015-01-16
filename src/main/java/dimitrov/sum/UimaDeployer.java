@@ -25,6 +25,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by aleks on 21/12/14.
@@ -59,7 +60,7 @@ public class UimaDeployer {
     /**
      * Start time of the processing - used to compute elapsed time.
      */
-    private static long mStartTime = System.nanoTime() / 1000000;
+    private static long mStartTime = System.currentTimeMillis();
 
 
     // For logging CAS activity
@@ -108,7 +109,7 @@ public class UimaDeployer {
         final long deployStart = System.currentTimeMillis();
         springContainerId = uimaAsynchronousEngine.deploy(settings.deploymentDescriptor, appCtx);
         final long deployEnd = System.currentTimeMillis();
-        log.info("Deployment took {} ms.", deployEnd - deployStart);
+        log.info("Deployment took {}.", renderMillis(deployEnd - deployStart));
 
         appCtx.put(UimaAsynchronousEngine.SERIALIZATION_STRATEGY, settings.serializationStrategy);
 
@@ -129,6 +130,7 @@ public class UimaDeployer {
             uimaAsynchronousEngine.undeploy(springContainerId);
             log.info("Stopping…");
             uimaAsynchronousEngine.stop();
+            log.info("Halt.");
         } catch (Exception e) {
             croak(e, "Failed asynchronous processing!");
         }
@@ -241,6 +243,31 @@ public class UimaDeployer {
     }
 
     /**
+     * Render milliseconds in a human-readable format. If the given amount of milliseconds
+     * amounts to less than a minute, display seconds, with millisecond fraction. If not,
+     * omit millisecond fraction, and display the bigger units.
+     *
+     * @param ms Milliseconds
+     * @return A formatted string for easy consumption by humans. Nom nom.
+     */
+    public static String renderMillis(final Long ms) {
+        if (ms > 1000) {
+            final long hrs = TimeUnit.MILLISECONDS.toHours(ms) % 24;
+            final long min = TimeUnit.MILLISECONDS.toMinutes(ms) % 60;
+            final long sec = TimeUnit.MILLISECONDS.toSeconds(ms) % 60;
+            if (hrs > 0) {
+                return String.format("%dh, %02dm, %02ds", hrs, min, sec);
+            } else if (min > 0) {
+                return String.format("%dm, %02ds", min, sec);
+            } else {
+                return String.format("%d.%03ds", sec, ms - sec*1000);
+            }
+        } else {
+            return ms.toString() + "ms";
+        }
+    }
+
+    /**
      * Callback Listener. Receives event notifications from CPE.
      */
     private class StatusCallbackListenerImpl extends UimaAsBaseCallbackListener {
@@ -294,17 +321,8 @@ public class UimaDeployer {
             if (size > 0) {
                 log.info("Document(s) had {} characters.", size);
             }
-            long elapsedTime = System.nanoTime() / 1000000 - mStartTime;
-            log.info("Time elapsed: {}ms ", elapsedTime);
-
-            String perfReport = uimaAsynchronousEngine.getPerformanceReport();
-            if (perfReport != null) {
-                log.info("\n\n ------------------ PERFORMANCE REPORT ------------------");
-                log.info(uimaAsynchronousEngine.getPerformanceReport());
-            } else {
-                log.warn("No performance report generated.");
-            }
-            if (springContainerId == null) { stop(); }
+            long elapsedTime = System.currentTimeMillis() - mStartTime;
+            log.info("Time elapsed: {}.", renderMillis(elapsedTime));
         }
 
         /**
@@ -320,61 +338,53 @@ public class UimaDeployer {
             maybeStopAndCroak(aStatus, "Error on process CAS call to remote service:");
             if (aStatus != null) {
                 if (log.isDebugEnabled()) {
-                    String ip = "no IP";
                     List<ProcessTraceEvent> eList = aStatus.getProcessTrace().getEventsByComponentName("UimaEE", false);
-                    for (ProcessTraceEvent event : eList) {
-                        if (event.getDescription().equals("Service IP")) {
-                            ip = event.getResultMessage();
-                        }
-                    }
+                    final String ip = eList.stream()
+                            .filter(event -> event.getDescription().equals("Service IP"))
+                            .map(ProcessTraceEvent::getResultMessage).findAny().orElse("no IP");
                     String casId = ((UimaASProcessStatus) aStatus).getCasReferenceId();
                     if (casId != null) {
-                        long current = System.nanoTime() / 1000000 - mStartTime;
-                        if (casMap.containsKey(casId)) {
-                            Object value = casMap.get(casId);
-                            if (value != null) {
-                                long start = (Long) value;
-                                log.debug("IP: {}\tStart: {}\tElapsed: {}", ip, start, (current - start));
-                            }
+                        final long current = System.currentTimeMillis() - mStartTime;
+                        final Long start = casMap.get(casId);
+                        if (start != null) {
+                            log.debug("IP: {}\tStart: {}\tElapsed: {}",
+                                    ip, renderMillis(start), renderMillis(current - start));
                         }
                     }
 
                 } else {
-                    if (0 == (entityCount + 1) % 50) {
+                    if ((entityCount + 1) % 50 == 0) {
                         log.info("{} processed.", (entityCount + 1));
                     }
                 }
             }
 
-            // if output dir specified, dump CAS to XMI
-            // try to retrieve the filename of the input file from the CAS
             File outFile = null;
-            Type srcDocInfoType = aCas.getTypeSystem().getType(
+            final Type srcDocInfoType = aCas.getTypeSystem().getType(
                     "org.apache.uima.examples.SourceDocumentInformation");
             if (srcDocInfoType != null) {
-                FSIterator<FeatureStructure> it = aCas.getIndexRepository().getAllIndexedFS(srcDocInfoType);
+                final FSIterator<FeatureStructure> it = aCas.getIndexRepository().getAllIndexedFS(srcDocInfoType);
                 if (it.hasNext()) {
-                    FeatureStructure srcDocInfoFs = it.get();
-                    Feature uriFeat = srcDocInfoType.getFeatureByBaseName("uri");
-                    Feature offsetInSourceFeat = srcDocInfoType.getFeatureByBaseName("offsetInSource");
-                    String uri = srcDocInfoFs.getStringValue(uriFeat);
-                    int offsetInSource = srcDocInfoFs.getIntValue(offsetInSourceFeat);
-                    File inFile;
+                    final FeatureStructure srcDocInfoFs = it.get();
+                    final Feature uriFeat = srcDocInfoType.getFeatureByBaseName("uri");
+                    final Feature offsetInSourceFeat = srcDocInfoType.getFeatureByBaseName("offsetInSource");
+                    final String uri = srcDocInfoFs.getStringValue(uriFeat);
+                    final int offsetInSource = srcDocInfoFs.getIntValue(offsetInSourceFeat);
                     try {
-                        inFile = new File(new URL(uri).getPath());
+                        final File inFile = new File(new URL(uri).getPath());
                         String outFileName = inFile.getName();
                         if (offsetInSource > 0) {
                             outFileName += ("_" + offsetInSource);
                         }
-                        outFileName += ".xmi";
-                        outFile = new File(outputDir, outFileName);
+                        outFile = new File(outputDir, outFileName + ".xmi");
                     } catch (MalformedURLException e1) {
                         // invalid URI, use default processing below
+                        log.warn("Invalid URI in SrcDocInfo: {}", uri);
                     }
                 }
             }
             if (outFile == null) {
-                outFile = new File(outputDir, "doc" + entityCount);
+                outFile = new File(outputDir, "doc" + entityCount + ".xmi");
             }
             try {
                 try (FileOutputStream outStream = new FileOutputStream(outFile)) {
@@ -387,14 +397,14 @@ public class UimaDeployer {
 
             // update stats
             entityCount++;
-            String docText = aCas.getDocumentText();
+            final String docText = aCas.getDocumentText();
             if (docText != null) {
                 size += docText.length();
             }
         }
 
         public void onBeforeMessageSend(UimaASProcessStatus status) {
-            long current = System.nanoTime() / 1000000 - mStartTime;
+            long current = System.currentTimeMillis() - mStartTime;
             casMap.put(status.getCasReferenceId(), current);
         }
 
