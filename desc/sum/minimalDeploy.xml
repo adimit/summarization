@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<analysisEngineDeploymentDescription
+        xmlns="http://uima.apache.org/resourceSpecifier">
+
+    <name>Minimal Annotator</name>
+    <description>Just a test.</description>
+
+    <deployment protocol="jms" provider="activemq">
+        <service>
+            <inputQueue endpoint="Test" brokerURL="tcp://minsk:61616"/>
+            <topDescriptor>
+                <import location="MinimalAggregate.xml"/>
+            </topDescriptor>
+        </service>
+    </deployment>
+</analysisEngineDeploymentDescription>

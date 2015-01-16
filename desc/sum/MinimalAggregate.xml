@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<analysisEngineDescription xmlns="http://uima.apache.org/resourceSpecifier">
+    <frameworkImplementation>org.apache.uima.java</frameworkImplementation>
+    <primitive>false</primitive>
+    <delegateAnalysisEngineSpecifiers>
+        <delegateAnalysisEngine key="SentenceDetector">
+            <import location="../opennlp/SentenceDetector.xml"/>
+        </delegateAnalysisEngine>
+        <delegateAnalysisEngine key="Tokenizer">
+            <import location="../opennlp/Tokenizer.xml"/>
+        </delegateAnalysisEngine>
+        <delegateAnalysisEngine key="TermFrequency">
+            <import location="TermFrequency.xml"/>
+        </delegateAnalysisEngine>
+    </delegateAnalysisEngineSpecifiers>
+    <analysisEngineMetaData>
+        <name>Simple Test</name>
+        <version>${pom.version}</version>
+        <vendor>Aleksandar Dimitrov</vendor>
+        <flowConstraints>
+            <fixedFlow>
+                <node>SentenceDetector</node>
+                <node>Tokenizer</node>
+                <node>TermFrequency</node>
+            </fixedFlow>
+        </flowConstraints>
+        <operationalProperties>
+            <modifiesCas>true</modifiesCas>
+            <multipleDeploymentAllowed>false</multipleDeploymentAllowed>
+            <outputsNewCASes>false</outputsNewCASes>
+        </operationalProperties>
+    </analysisEngineMetaData>
+    <resourceManagerConfiguration>
+        <externalResources>
+            <externalResource>
+                <name>SentenceModel</name>
+                <description/>
+                <fileResourceSpecifier>
+                    <fileUrl>file:models/en-sent.bin</fileUrl>
+                </fileResourceSpecifier>
+                <implementationName>opennlp.uima.sentdetect.SentenceModelResourceImpl</implementationName>
+            </externalResource>
+            <externalResource>
+                <name>TokenModel</name>
+                <description/>
+                <fileResourceSpecifier>
+                    <fileUrl>file:models/en-token.bin</fileUrl>
+                </fileResourceSpecifier>
+                <implementationName>opennlp.uima.tokenize.TokenizerModelResourceImpl</implementationName>
+            </externalResource>
+        </externalResources>
+        <externalResourceBindings>
+            <externalResourceBinding>
+                <key>SentenceDetector/opennlp.uima.ModelName</key>
+                <resourceName>SentenceModel</resourceName>
+            </externalResourceBinding>
+            <externalResourceBinding>
+                <key>Tokenizer/opennlp.uima.ModelName</key>
+                <resourceName>TokenModel</resourceName>
+            </externalResourceBinding>
+        </externalResourceBindings>
+    </resourceManagerConfiguration>
+</analysisEngineDescription>
