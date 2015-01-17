@@ -80,10 +80,14 @@ public class DocumentReader extends CollectionReader_ImplBase {
      * @throws org.apache.uima.collection.CollectionException if there is some other problem with reading from the Collection
      */
     @Override
-    public void getNext(CAS aCAS) throws IOException, CollectionException {
+    public synchronized void getNext(CAS aCAS) throws IOException, CollectionException {
         final File f = this.getNextFile();
         log.info("Next document: {}", f.getName());
         try {
+            if (aCAS == null) {
+                log.error("Got a null cas.");
+                throw new CollectionException(CollectionException.MISSING_CAS_INITIALIZER, new Object[] {this.toString()});
+            }
             final JCas jcas = aCAS.getJCas();
             // FIXME: We just use the default encoding, which shouldn't be the case.
             final String fContents = FileUtils.readFileToString(f);
@@ -137,8 +141,7 @@ public class DocumentReader extends CollectionReader_ImplBase {
      * @throws org.apache.uima.collection.CollectionException if there is some other problem with reading from the Collection
      */
     @Override
-    public boolean hasNext() throws IOException, CollectionException {
-        log.debug("DocumentReader.hasNext() is called.");
+    public synchronized boolean hasNext() throws IOException, CollectionException {
         if (fileIterator != null) {
             return fileIterator.hasNext();
         } else {
@@ -162,7 +165,7 @@ public class DocumentReader extends CollectionReader_ImplBase {
      * example number of entities or bytes).
      */
     @Override
-    public Progress[] getProgress() {
+    public synchronized Progress[] getProgress() {
         log.debug("DocumentReader.getProgress() is called.");
         return new Progress[] { new ProgressImpl(progress, totalFiles, Progress.ENTITIES) };
     }
@@ -173,7 +176,7 @@ public class DocumentReader extends CollectionReader_ImplBase {
      * @throws java.io.IOException if an I/O failure occurs
      */
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
         log.info("Closing document reader.");
         // allow garbage collection
         fileIterator = null;
