@@ -6,6 +6,7 @@
     <description>Just a test.</description>
 
     <deployment protocol="jms" provider="activemq">
+        <casPool numberOfCASes="1"/>
         <service>
             <inputQueue endpoint="Test" brokerURL="tcp://minsk:61616"/>
             <topDescriptor>
