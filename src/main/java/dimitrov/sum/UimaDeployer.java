@@ -337,6 +337,7 @@ public class UimaDeployer {
         public void entityProcessComplete(CAS aCas, EntityProcessStatus aStatus) {
             maybeStopAndCroak(aStatus, "Error on process CAS call to remote service:");
             if (aStatus != null) {
+                log.debug("entityProcessComplete(): {}", aStatus.getStatusMessage());
                 if (log.isDebugEnabled()) {
                     List<ProcessTraceEvent> eList = aStatus.getProcessTrace().getEventsByComponentName("UimaEE", false);
                     final String ip = eList.stream()
@@ -377,6 +378,7 @@ public class UimaDeployer {
                             outFileName += ("_" + offsetInSource);
                         }
                         outFile = new File(outputDir, outFileName + ".xmi");
+                        log.debug("Finished annotation of {}. Outputting to {}", uri, outFile.getName());
                     } catch (MalformedURLException e1) {
                         // invalid URI, use default processing below
                         log.warn("Invalid URI in SrcDocInfo: {}", uri);
@@ -385,11 +387,10 @@ public class UimaDeployer {
             }
             if (outFile == null) {
                 outFile = new File(outputDir, "doc" + entityCount + ".xmi");
+                log.debug("Finished annotation of unknown file. Outputting to {}", outFile.getName());
             }
-            try {
-                try (FileOutputStream outStream = new FileOutputStream(outFile)) {
+            try (FileOutputStream outStream = new FileOutputStream(outFile)) {
                     XmiCasSerializer.serialize(aCas, outStream);
-                }
             } catch (Exception e) {
                 log.error("Could not save CAS to XMI file");
                 e.printStackTrace();
@@ -415,7 +416,7 @@ public class UimaDeployer {
          * service (PID).
          */
         public void onBeforeProcessCAS(UimaASProcessStatus status, String nodeIP, String pid) {
-            log.debug("About to process cas. Status: {}, node: {}, pid: {}",
+            log.debug("onBeforeProcessCAS() Status: {}, node: {}, pid: {}",
                     status.getStatusMessage(), nodeIP, pid);
         }
     }
