@@ -70,6 +70,9 @@ public class DocumentReader extends CollectionReader_ImplBase {
         log.debug("Found {} files to process.", totalFiles);
     }
 
+    @Override
+    public boolean isConsuming() { return true; }
+
     /**
      * Gets the next element of the collection. The element will be stored in the provided CAS object.
      * If this is a consuming <code>CollectionReader</code> (see {@link #isConsuming()}), this
