@@ -43,22 +43,22 @@
     </logger>
 
     <!-- ActiveMQ messages are generally distinct from UIMA messages, so they get their own logger. -->
-    <logger name="org.apache.activemq" level="INFO" additivity="false">
+    <logger name="org.apache.activemq" level="WARN" additivity="false">
         <appender-ref ref="activemq" />
     </logger>
 
     <!-- We only use the spring framework as part of the ActiveMQ setup process. -->
-    <logger name="org.springframework" level="INFO" additivity="false">
+    <logger name="org.springframework" level="WARN" additivity="false">
         <appender-ref ref="activemq" />
     </logger>
 
     <!-- Likewise, dump all xbean stuff to ActiveMQ logs -->
-    <logger name="org.apache.xbean" level="INFO" additivity="false">
+    <logger name="org.apache.xbean" level="WARN" additivity="false">
         <appender-ref ref="activemq" />
     </logger>
 
     <!-- ActiveMQ uses some packages from eclipse's jetty. -->
-    <logger name="org.eclipse.jetty" level="INFO" additivity="false">
+    <logger name="org.eclipse.jetty" level="WARN" additivity="false">
         <appender-ref ref="activemq" />
     </logger>
 </configuration>
