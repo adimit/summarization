@@ -123,6 +123,28 @@
 		</typeDescription>
 
 		<typeDescription>
+			<name>dimitrov.sum.Term</name>
+			<supertypeName>uima.tcas.Annotation</supertypeName>
+			<features>
+				<featureDescription>
+					<name>surface</name>
+					<description>The surface form of the term (identical to Token.getCoveredText().)</description>
+					<rangeTypeName>uima.cas.String</rangeTypeName>
+				</featureDescription>
+				<featureDescription>
+					<name>casFrequency</name>
+					<description>Frequency of the term within its CAS.</description>
+					<rangeTypeName>uima.cas.Integer</rangeTypeName>
+				</featureDescription>
+				<featureDescription>
+					<name>observations</name>
+					<description>An array of Token FS where this term was observed.</description>
+					<rangeTypeName>uima.cas.FSArray</rangeTypeName>
+				</featureDescription>
+			</features>
+		</typeDescription>
+
+		<typeDescription>
 			<name>org.apache.uima.examples.SourceDocumentInformation</name>
 			<description>Stores detailed information about the original source document from which the current CAS was initialized. All information (like size) refers to the source document and not to the document in the CAS which may be converted and filtered by a CAS Initializer. For example this information will be written to the Semantic Search index so that the original document contents can be retrieved by queries.</description>
 			<supertypeName>uima.tcas.Annotation</supertypeName>
