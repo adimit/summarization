@@ -98,8 +98,12 @@
         </typeSystemDescription>
         <capabilities>
             <capability>
-                <inputs />
-                <outputs />
+                <inputs>
+                    <type allAnnotatorFeatures="true">opennlp.uima.Token</type>
+                </inputs>
+                <outputs>
+                    <type allAnnotatorFeatures="true">dimitrov.sum.Term</type>
+                </outputs>
                 <languagesSupported>
                     <language>en</language>
                 </languagesSupported>
