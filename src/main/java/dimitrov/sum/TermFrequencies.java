@@ -1,45 +1,36 @@
 package dimitrov.sum;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
  * Created by aleks on 05/12/14.
  */
-public class TermFrequencies<T> {
-    private final Map<T,Integer> tf;
+public class TermFrequencies<T,E> {
+    private final Map<T,List<E>> tf;
 
     // TODO: write tests for this class.
-    public TermFrequencies() {
-        tf = new HashMap<>();
-    }
+    public TermFrequencies() { tf = new HashMap<>(); }
 
     /**
      * Observe a singular occurrence of a term <code>t</code>.
      *
-     * @param t
+     * @param t The observed entity.
+     * @param e A particular instance of observation.
      */
-    public void observe(T t) {
-        tf.compute(t, (k,v) -> (v==null) ? 1 : v + 1);
+    public void observe(final T t, final E e) {
+        tf.compute(t, (k,v) -> v == null ? lambdAdd(new LinkedList<>(), e) : lambdAdd(v, e));
     }
 
-    public void observeAll(TermFrequencies<T> sometf) {
+    /* Convenience functions for adding to a List inside a Lambda; in the Collections API, Lambdas have
+     * to return the value type, not just mutate it. This is probably inefficient. */
+    private List<E> lambdAdd(final List<E> c, final E e) { c.add(e); return c; }
+    private List<E> lambdAddAll(final List<E> c1, final List<E> c2) { c1.addAll(c2); return c1; }
+
+    public void observeAll(TermFrequencies<T,E> sometf) {
         // We can't just use .putAll(), that'd ruin the present bindings. Unfortunately, there's no .computeAll()
-        for (Entry<T,Integer> oldentry:sometf.tf.entrySet()) {
-            tf.compute(oldentry.getKey(), (k,v) -> (v==null) ?
-                    oldentry.getValue() : oldentry.getValue() + v);
-        }
+        sometf.entrySet().stream().map(newEntry -> tf.merge(newEntry.getKey(), newEntry.getValue(), this::lambdAddAll));
     }
 
-    /**
-     * Query this term frequency record for a specific term's frequency. If it hasn't been observed, return 0.
-     * Does not return <code>null</code>.
-     *
-     * @return: The term's frequency; 0 if it has not been observed.
-     */
-    public Integer freq(String term) {
-        final Integer frequency = tf.get(term);
-        return (frequency == null) ? 0 : frequency;
-    }
+    public Collection<Entry<T,List<E>>> entrySet() { return tf.entrySet(); }
 }

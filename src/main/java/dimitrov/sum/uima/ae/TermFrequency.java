@@ -10,7 +10,10 @@ import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.*;
 import org.apache.uima.cas.text.AnnotationFS;
 import org.apache.uima.resource.ResourceInitializationException;
+import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
+
+import java.util.List;
 
 /**
  * Created by aleks on 05/12/14.
@@ -21,15 +24,18 @@ public class TermFrequency extends CasAnnotator_ImplBase {
     protected Logger log;
 
     private Type tokenType;
-    private Feature tfidfFeature;
-    private TermFrequencies<String> tf;
+    private Type termFrequencyType;
+    private Feature termFrequencyFeature;
+    private Feature termSurfaceFeature;
+    private Feature termObservationsFeature;
+
 
     @Override
     public void initialize(UimaContext context) throws ResourceInitializationException {
+        this.log = context.getLogger();
+        log.log(Level.INFO, "Initializing Term Frequency AE.");
         super.initialize(context);
         this.context = context;
-        this.log = context.getLogger();
-        this.tf = new TermFrequencies<>();
     }
 
     /**
@@ -41,18 +47,44 @@ public class TermFrequency extends CasAnnotator_ImplBase {
      */
     @Override
     public void process(CAS aCAS) throws AnalysisEngineProcessException {
+        TermFrequencies<String, AnnotationFS> tf = new TermFrequencies<>();
+        log.log(Level.INFO, "Starting Term Frequency annotation.");
         final FSIndex<AnnotationFS> tokens = aCAS.getAnnotationIndex(tokenType);
+        tokens.forEach(token -> tf.observe(token.getCoveredText(), token));
+        tf.entrySet().forEach(observation -> recordObservationInCas(aCAS, observation.getKey(), observation.getValue()));
+        log.log(Level.INFO, "Finished Term Frequency annotation.");
+    }
 
-        for (AnnotationFS token:tokens) {
-            tf.observe(token.getCoveredText());
-            token.setDoubleValue(this.tfidfFeature, 0.1);
-        }
+
+    private void recordObservationInCas(final CAS aCAS, final String term, final List<AnnotationFS> observations) {
+        // new Feature structure
+        final AnnotationFS tfAnnotation = aCAS.createAnnotation(termFrequencyType,0,0);
+        // Set term
+        tfAnnotation.setStringValue(termSurfaceFeature, term);
+        // Set frequency
+        final int frequency = observations.size();
+        tfAnnotation.setIntValue(termFrequencyFeature, frequency);
+        final int numObs = observations.size();
+        final ArrayFS observationsFS = aCAS.createArrayFS(numObs);
+        final FeatureStructure[] observationsArr = new FeatureStructure[numObs];
+        observations.toArray(observationsArr);
+        observationsFS.copyFromArray(observationsArr,0,0,numObs);
+        tfAnnotation.setFeatureValue(termObservationsFeature, observationsFS);
+        aCAS.addFsToIndexes(tfAnnotation);
     }
 
     @Override
     public void typeSystemInit(TypeSystem typeSystem) throws AnalysisEngineProcessException {
+        log.log(Level.INFO, "Initializing type system.");
         tokenType = AnnotatorUtil.getRequiredTypeParameter(this.context, typeSystem, UimaUtil.TOKEN_TYPE_PARAMETER);
-        tfidfFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.tokenType,
-                Names.TFIDF_FEATURE_PARAMETER, CAS.TYPE_NAME_DOUBLE);
+        termFrequencyType = AnnotatorUtil.getRequiredTypeParameter
+                (this.context, typeSystem, Names.TERM_FREQUENCY_TYPE_PARAMETER);
+        termFrequencyFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
+                Names.TERM_FREQUENCY_FEATURE_PARAMETER, CAS.TYPE_NAME_INTEGER);
+        termSurfaceFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
+                Names.TERM_SURFACE_FEATURE_PARAMETER, CAS.TYPE_NAME_STRING);
+        termObservationsFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
+                Names.TERM_OBSERVATIONS_FEATURE_PARAMETER, CAS.TYPE_NAME_FS_ARRAY);
+        log.log(Level.INFO, "Finished initializing type system.");
     }
 }
