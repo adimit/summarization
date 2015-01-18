@@ -2,6 +2,7 @@ package dimitrov.sum;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by aleks on 05/12/14.
@@ -10,7 +11,7 @@ public class TermFrequencies<T,E> {
     private final Map<T,List<E>> tf;
 
     // TODO: write tests for this class.
-    public TermFrequencies() { tf = new HashMap<>(); }
+    public TermFrequencies() { tf = new ConcurrentHashMap<>(); }
 
     /**
      * Observe a singular occurrence of a term <code>t</code>.
@@ -18,7 +19,7 @@ public class TermFrequencies<T,E> {
      * @param t The observed entity.
      * @param e A particular instance of observation.
      */
-    public void observe(final T t, final E e) {
+    public synchronized void observe(final T t, final E e) {
         tf.compute(t, (k,v) -> v == null ? lambdAdd(new LinkedList<>(), e) : lambdAdd(v, e));
     }
 
