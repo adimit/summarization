@@ -141,6 +141,7 @@ public class DocumentReader extends CollectionReader_ImplBase {
      */
     @Override
     public synchronized boolean hasNext() throws IOException, CollectionException {
+        log.debug("DocumentReader.hasNext() is called. We have {} documents left.", totalFiles - progress);
         if (fileIterator != null) {
             return fileIterator.hasNext();
         } else {
