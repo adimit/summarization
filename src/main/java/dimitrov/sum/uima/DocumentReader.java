@@ -4,6 +4,7 @@ import dimitrov.sum.UimaDeployer;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.uima.UIMA_IllegalArgumentException;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.CASException;
 import org.apache.uima.collection.CollectionException;
@@ -83,36 +84,38 @@ public class DocumentReader extends CollectionReader_ImplBase {
     public synchronized void getNext(CAS aCAS) throws IOException, CollectionException {
         final File f = this.getNextFile();
         log.info("Next document: {}", f.getName());
+        if (aCAS == null) {
+            log.error("Got a null cas.");
+            throw new UIMA_IllegalArgumentException(UIMA_IllegalArgumentException.ILLEGAL_ARGUMENT,
+                    new Object[] {"null", "aCAS", "getNext"});
+        }
+        final JCas jcas;
         try {
-            if (aCAS == null) {
-                log.error("Got a null cas.");
-                throw new CollectionException(CollectionException.MISSING_CAS_INITIALIZER, new Object[] {this.toString()});
-            }
-            final JCas jcas = aCAS.getJCas();
-            // FIXME: We just use the default encoding, which shouldn't be the case.
-            final String fContents = FileUtils.readFileToString(f);
-            jcas.setDocumentText(fContents);
-
-            final SourceDocumentInformation srcInfo = new SourceDocumentInformation(jcas);
-            srcInfo.setUri(f.getAbsoluteFile().toURI().toString());
-            srcInfo.setOffsetInSource(0);
-            srcInfo.setLastSegment(progress == totalFiles);
-
-            // good graces, I have *no* idea who was stupid enough to make
-            // documentSize an int, but we have to live with it.
-            final long fSize = f.length();
-            if (fSize > Integer.MAX_VALUE) {
-                log.warn("File size of '{}' is larger than Integer.MAX_VALUE bytes. CAS document size unreliable!",
-                        f.getAbsoluteFile().toString());
-                srcInfo.setDocumentSize(Integer.MAX_VALUE);
-            } else {
-                srcInfo.setDocumentSize((int) f.length());
-            }
-
-            srcInfo.addToIndexes();
+            jcas = aCAS.getJCas();
         } catch (CASException e) {
             throw new CollectionException(e);
         }
+        // FIXME: We just use the default encoding, which shouldn't be the case.
+        final String fContents = FileUtils.readFileToString(f);
+        jcas.setDocumentText(fContents);
+
+        final SourceDocumentInformation srcInfo = new SourceDocumentInformation(jcas);
+        srcInfo.setUri(f.getAbsoluteFile().toURI().toString());
+        srcInfo.setOffsetInSource(0);
+        srcInfo.setLastSegment(progress == totalFiles);
+
+        // good graces, I have *no* idea who was stupid enough to make
+        // documentSize an int, but we have to live with it.
+        final long fSize = f.length();
+        if (fSize > Integer.MAX_VALUE) {
+            log.warn("File size of '{}' is larger than Integer.MAX_VALUE bytes. CAS document size unreliable!",
+                    f.getAbsoluteFile().toString());
+            srcInfo.setDocumentSize(Integer.MAX_VALUE);
+        } else {
+            srcInfo.setDocumentSize((int) f.length());
+        }
+
+        srcInfo.addToIndexes();
     }
 
     /**
@@ -122,13 +125,9 @@ public class DocumentReader extends CollectionReader_ImplBase {
      * @throws CollectionException
      */
     private File getNextFile() throws IOException, CollectionException {
-        if (this.hasNext()) {
-            progress++;
-            return fileIterator.next();
-        } else {
-            throw new CollectionException(ResourceConfigurationException.CONFIG_SETTING_ABSENT,
-                new Object[] { PARAM_INPUTDIR });
-        }
+        final File f = fileIterator.next();
+        progress++;
+        return f;
     }
 
     /**
