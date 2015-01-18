@@ -18,6 +18,9 @@
         <delegateAnalysisEngine key="Parser">
             <import location="../opennlp/Parser.xml"/>
         </delegateAnalysisEngine>
+        <delegateAnalysisEngine key="TermFrequency">
+            <import location="TermFrequency.xml"/>
+        </delegateAnalysisEngine>
     </delegateAnalysisEngineSpecifiers>
     <analysisEngineMetaData>
         <name>Simple Test</name>
@@ -27,6 +30,7 @@
             <fixedFlow>
                 <node>SentenceDetector</node>
                 <node>Tokenizer</node>
+                <node>TermFrequency</node>
                 <node>PosTagger</node>
                 <node>Chunker</node>
                 <node>Parser</node>
