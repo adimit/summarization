@@ -22,10 +22,10 @@
 <analysisEngineDescription xmlns="http://uima.apache.org/resourceSpecifier">
     <frameworkImplementation>org.apache.uima.java</frameworkImplementation>
     <primitive>true</primitive>
-    <annotatorImplementationName>dimitrov.sum.uima.ae.TermFrequencyAE</annotatorImplementationName>
+    <annotatorImplementationName>dimitrov.sum.uima.ae.TermFrequency</annotatorImplementationName>
     <analysisEngineMetaData>
-        <name>TFIDF</name>
-        <description>Adds tf/idf to tokens</description>
+        <name>TermFrequency</name>
+        <description>Computes term frequencies on a per-CAS-basis.</description>
         <version>${pom.version}</version>
         <configurationParameters>
             <configurationParameter>
@@ -35,7 +35,25 @@
                 <mandatory>true</mandatory>
             </configurationParameter>
             <configurationParameter>
-                <name>dimitrov.sum.uima.TfidfFeature</name>
+                <name>dimitrov.sum.TermType</name>
+                <type>String</type>
+                <multiValued>false</multiValued>
+                <mandatory>true</mandatory>
+            </configurationParameter>
+            <configurationParameter>
+                <name>dimitrov.sum.TermFrequencyFeature</name>
+                <type>String</type>
+                <multiValued>false</multiValued>
+                <mandatory>true</mandatory>
+            </configurationParameter>
+            <configurationParameter>
+                <name>dimitrov.sum.TermSurfaceFeature</name>
+                <type>String</type>
+                <multiValued>false</multiValued>
+                <mandatory>true</mandatory>
+            </configurationParameter>
+            <configurationParameter>
+                <name>dimitrov.sum.TermObservationsFeature</name>
                 <type>String</type>
                 <multiValued>false</multiValued>
                 <mandatory>true</mandatory>
@@ -49,19 +67,35 @@
                 </value>
             </nameValuePair>
             <nameValuePair>
-                <name>dimitrov.sum.uima.TfidfFeature</name>
+                <name>dimitrov.sum.TermType</name>
                 <value>
-                    <string>tfidf</string>
+                    <string>dimitrov.sum.Term</string>
+                </value>
+            </nameValuePair>
+            <nameValuePair>
+                <name>dimitrov.sum.TermSurfaceFeature</name>
+                <value>
+                    <string>surface</string>
+                </value>
+            </nameValuePair>
+            <nameValuePair>
+                <name>dimitrov.sum.TermFrequencyFeature</name>
+                <value>
+                    <string>casFrequency</string>
+                </value>
+            </nameValuePair>
+            <nameValuePair>
+                <name>dimitrov.sum.TermObservationsFeature</name>
+                <value>
+                    <string>observations</string>
                 </value>
             </nameValuePair>
         </configurationParameterSettings>
-
         <typeSystemDescription>
             <imports>
                 <import location="../opennlp/TypeSystem.xml" />
             </imports>
         </typeSystemDescription>
-
         <capabilities>
             <capability>
                 <inputs />
