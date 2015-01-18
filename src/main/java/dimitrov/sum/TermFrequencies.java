@@ -1,5 +1,6 @@
 package dimitrov.sum;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -7,8 +8,10 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by aleks on 05/12/14.
  */
-public class TermFrequencies<T,E> {
+public class TermFrequencies<T,E> implements Serializable {
     private final Map<T,List<E>> tf;
+
+    static final long serialVersionUID = 1L;
 
     // TODO: write tests for this class.
     public TermFrequencies() { tf = new ConcurrentHashMap<>(); }
