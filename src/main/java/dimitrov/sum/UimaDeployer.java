@@ -3,6 +3,7 @@ package dimitrov.sum;
 import dimitrov.sum.uima.LocalSourceInfo;
 import dimitrov.sum.uima.ae.TermFrequency;
 import org.apache.activemq.broker.BrokerService;
+import org.apache.commons.io.FileUtils;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.aae.client.UimaASProcessStatus;
 import org.apache.uima.aae.client.UimaAsBaseCallbackListener;
@@ -13,6 +14,9 @@ import org.apache.uima.cas.impl.XmiCasSerializer;
 import org.apache.uima.collection.CollectionReader;
 import org.apache.uima.collection.CollectionReaderDescription;
 import org.apache.uima.collection.EntityProcessStatus;
+import org.apache.uima.resource.ResourceInitializationException;
+import org.apache.uima.resourceSpecifier.factory.*;
+import org.apache.uima.resourceSpecifier.factory.impl.ServiceContextImpl;
 import org.apache.uima.util.ProcessTraceEvent;
 import org.apache.uima.util.XMLInputSource;
 import org.slf4j.Logger;
@@ -23,6 +27,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -49,6 +54,7 @@ public class UimaDeployer {
     public static final String PROP_USE_EMBEDDED_BROKER = "useEmbeddedBroker";
     public static final String PROP_OUTPUT_DIRECTORY = "outputDirectory";
     public static final String PROP_INPUT_DIRECTORY = "inputDirectory";
+    public static final String PROP_PHASE_1_AGGREGATE = "phase1AggregateDescriptor";
 
     // Defaults for settings
     private static final int DEFAULT_CAS_POOL_SIZE = 1;
@@ -62,6 +68,7 @@ public class UimaDeployer {
      */
     private static long mStartTime = System.currentTimeMillis();
 
+    private final File phase1Descriptor;
 
     // For logging CAS activity
     private ConcurrentHashMap<String, Long> casMap = new ConcurrentHashMap<>();
@@ -81,12 +88,45 @@ public class UimaDeployer {
 		}
 	}
 
+    private File makePhase1DeploymentDescriptor(final DeployerSettings settings)
+            throws ResourceInitializationException {
+        final ServiceContext context = new ServiceContextImpl("Phase1", "Phase 1 Summarization Annotator",
+                settings.phase1Aggregate, settings.endpointName, settings.brokerUrl);
+        context.setCasPoolSize(settings.uimaCasPoolSize);
+        context.setScaleup(settings.uimaCasPoolSize);
+
+        final UimaASAggregateDeploymentDescriptor dd =
+                DeploymentDescriptorFactory.createAggregateDeploymentDescriptor(context);
+        dd.setAsync(true);
+
+        File ddXML = null;
+        try {
+            ddXML = new File("phase1DD.xml");
+            final String ddContent = dd.toXML();
+
+            log.debug("Deployment descriptor:\n{}", ddContent);
+            FileUtils.writeStringToFile(ddXML, ddContent, Charset.defaultCharset(), false);
+            log.info("Wrote deployment descriptor to {}.", ddXML.getAbsoluteFile());
+            return ddXML;
+        } catch (IOException e) {
+            log.error("Failed to write Phase 1 deployment descriptor! Deliting temporary file {}.",
+                    ddXML.getAbsoluteFile(), e);
+            final boolean deleted = ddXML.delete();
+            if (!deleted)
+                log.warn("Failed to delete {}.", ddXML.getAbsoluteFile());
+            throw new ResourceInitializationException(e);
+        }
+
+    }
+
     private UimaDeployer(final DeployerSettings settings) throws Exception {
         // An undocumented little "feature" of UIMA-AS: if you undeploy it with
         // the property dontKill missing, it will just call System.exit(0).
         System.setProperty("dontKill", "true");
-        uimaAsynchronousEngine =
-                new BaseUIMAAsynchronousEngine_impl();
+
+        phase1Descriptor = makePhase1DeploymentDescriptor(settings);
+
+        uimaAsynchronousEngine = new BaseUIMAAsynchronousEngine_impl();
 
         final Map<String,Object> appCtx = new HashMap<>();
 
@@ -110,7 +150,7 @@ public class UimaDeployer {
 
         log.info("Deploying AE.");
         final long deployStart = System.currentTimeMillis();
-        springContainerId = uimaAsynchronousEngine.deploy(settings.deploymentDescriptor, appCtx);
+        springContainerId = uimaAsynchronousEngine.deploy(phase1Descriptor.getAbsolutePath(), appCtx);
         final long deployEnd = System.currentTimeMillis();
         log.info("Deployment took {}.", renderMillis(deployEnd - deployStart));
 
@@ -135,6 +175,9 @@ public class UimaDeployer {
             uimaAsynchronousEngine.undeploy(springContainerId);
             log.info("Stopping…");
             uimaAsynchronousEngine.stop();
+            if (!phase1Descriptor.delete())
+                log.warn("Couldn't delete phase 1 descriptor at {}!", phase1Descriptor.getAbsoluteFile());
+
             log.info("Halt.");
         } catch (Exception e) {
             croak(e, "Failed asynchronous processing!");
@@ -204,7 +247,6 @@ public class UimaDeployer {
     }
 
     private static class DeployerSettings {
-        final String deploymentDescriptor;
         final File outputDir;
         final String serializationStrategy;
         final boolean useEmbeddedBroker;
@@ -215,6 +257,7 @@ public class UimaDeployer {
         final String brokerUrl;
         final String endpointName;
         final String documentReaderDescriptor;
+        final String phase1Aggregate;
 
         DeployerSettings(final Properties settings) {
             // Optional settings
@@ -224,9 +267,9 @@ public class UimaDeployer {
             this.uimaCasPoolSize = getNumericProperty(settings, PROP_CAS_POOL_SIZE, DEFAULT_CAS_POOL_SIZE);
 
             // Mandatory settings
+            this.phase1Aggregate = set(settings, PROP_PHASE_1_AGGREGATE);
             this.brokerUrl = set(settings, PROP_BROKER_URL);
             this.endpointName = set(settings, PROP_ENDPOINT_NAME);
-            this.deploymentDescriptor = set(settings, PROP_DEPLOYMENT_DESCRIPTOR);
             this.serializationStrategy = settings.getProperty(PROP_SERIALIZATION_STRAT, "xmi");
             this.documentReaderDescriptor = set(settings, PROP_DOCUMENT_READER_DESCRIPTOR);
             this.useEmbeddedBroker =
