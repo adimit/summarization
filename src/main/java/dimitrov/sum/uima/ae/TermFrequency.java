@@ -1,6 +1,7 @@
 package dimitrov.sum.uima.ae;
 
 import dimitrov.sum.TermFrequencies;
+import dimitrov.sum.uima.LocalSourceInfo;
 import dimitrov.sum.uima.Names;
 import opennlp.uima.util.AnnotatorUtil;
 import opennlp.uima.util.UimaUtil;
@@ -13,7 +14,10 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by aleks on 05/12/14.
@@ -29,6 +33,8 @@ public class TermFrequency extends CasAnnotator_ImplBase {
     private Feature termSurfaceFeature;
     private Feature termObservationsFeature;
 
+    private static TermFrequencies<String,TermFreqRecord> documentFrequencies;
+
 
     @Override
     public void initialize(UimaContext context) throws ResourceInitializationException {
@@ -36,6 +42,7 @@ public class TermFrequency extends CasAnnotator_ImplBase {
         log.log(Level.INFO, "Initializing Term Frequency AE.");
         super.initialize(context);
         this.context = context;
+        documentFrequencies = new TermFrequencies<>();
     }
 
     /**
@@ -47,16 +54,20 @@ public class TermFrequency extends CasAnnotator_ImplBase {
      */
     @Override
     public void process(CAS aCAS) throws AnalysisEngineProcessException {
-        TermFrequencies<String, AnnotationFS> tf = new TermFrequencies<>();
+        final TermFrequencies<String, AnnotationFS> tf = new TermFrequencies<>();
+        final LocalSourceInfo sourceInfo = new LocalSourceInfo(aCAS);
         log.log(Level.INFO, "Starting Term Frequency annotation.");
         final FSIndex<AnnotationFS> tokens = aCAS.getAnnotationIndex(tokenType);
         tokens.forEach(token -> tf.observe(token.getCoveredText(), token));
-        tf.entrySet().forEach(observation -> recordObservationInCas(aCAS, observation.getKey(), observation.getValue()));
+        tf.entrySet().forEach(observation ->
+                recordObservationInCas(aCAS, observation.getKey(), observation.getValue(),
+                        sourceInfo.getUri().toASCIIString()));
         log.log(Level.INFO, "Finished Term Frequency annotation.");
     }
 
 
-    private void recordObservationInCas(final CAS aCAS, final String term, final List<AnnotationFS> observations) {
+    private void recordObservationInCas(final CAS aCAS, final String term,
+                                        final List<AnnotationFS> observations, final String docUri) {
         // new Feature structure
         final AnnotationFS tfAnnotation = aCAS.createAnnotation(termFrequencyType,0,0);
         // Set term
@@ -71,6 +82,7 @@ public class TermFrequency extends CasAnnotator_ImplBase {
         observationsFS.copyFromArray(observationsArr,0,0,numObs);
         tfAnnotation.setFeatureValue(termObservationsFeature, observationsFS);
         aCAS.addFsToIndexes(tfAnnotation);
+        documentFrequencies.observe(term,new TermFreqRecord(numObs, docUri));
     }
 
     @Override
@@ -86,5 +98,29 @@ public class TermFrequency extends CasAnnotator_ImplBase {
         termObservationsFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
                 Names.TERM_OBSERVATIONS_FEATURE_PARAMETER, CAS.TYPE_NAME_FS_ARRAY);
         log.log(Level.INFO, "Finished initializing type system.");
+    }
+
+    @Override
+    public void collectionProcessComplete() throws AnalysisEngineProcessException {
+        log.log(Level.INFO, "COLLECTION PROCESS COMPLETE.");
+        final Collection<Map.Entry<String,List<TermFreqRecord>>> docFreqs = documentFrequencies.entrySet();
+        final int totalNumberOfTerms = docFreqs.size();
+        final int totalNumberOfObservations = docFreqs.stream()
+                .flatMap(entry -> entry.getValue().stream().map(TermFreqRecord::getObservations))
+                .reduce(0,(a,b) -> a + b);
+        log.log(Level.INFO, "Observed " + totalNumberOfTerms
+                + " distinct terms over " + totalNumberOfObservations + " observations.");
+    }
+
+    private static class TermFreqRecord {
+        final int observations;
+        final String documentURI;
+
+        TermFreqRecord(final int observations, final String documentURI) {
+            this.observations = observations;
+            this.documentURI = documentURI;
+        }
+
+        int getObservations() { return observations; }
     }
 }
