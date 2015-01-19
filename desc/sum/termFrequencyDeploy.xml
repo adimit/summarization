@@ -10,7 +10,7 @@
         <service>
             <inputQueue endpoint="Test" brokerURL="tcp://minsk:61616"/>
             <topDescriptor>
-                <import location="MinimalAggregate.xml"/>
+                <import location="termFrequencyAggregate.xml"/>
             </topDescriptor>
         </service>
     </deployment>
