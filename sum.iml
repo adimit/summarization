@@ -69,7 +69,6 @@
     <orderEntry type="library" name="Maven: org.apache.activemq:activemq-optional:5.7.0" level="project" />
     <orderEntry type="library" name="Maven: org.apache.activemq:activeio-core:3.1.4" level="project" />
     <orderEntry type="library" name="Maven: org.apache.activemq:activemq-console:5.7.0" level="project" />
-    <orderEntry type="library" name="Maven: commons-lang:commons-lang:2.6" level="project" />
     <orderEntry type="library" name="Maven: commons-daemon:commons-daemon:1.0.10" level="project" />
     <orderEntry type="library" name="Maven: aopalliance:aopalliance:1.0" level="project" />
     <orderEntry type="library" name="Maven: org.eclipse.jetty:jetty-webapp:7.6.7.v20120910" level="project" />
@@ -114,5 +113,8 @@
     <orderEntry type="library" name="Maven: org.fusesource.hawtbuf:hawtbuf:1.9" level="project" />
     <orderEntry type="library" name="Maven: commons-net:commons-net:3.1" level="project" />
     <orderEntry type="library" name="Maven: org.jasypt:jasypt:1.9.0" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.uima:uimafit-core:2.1.0" level="project" />
+    <orderEntry type="library" name="Maven: commons-lang:commons-lang:2.6" level="project" />
+    <orderEntry type="library" name="Maven: commons-logging:commons-logging-api:1.1" level="project" />
   </component>
 </module>
