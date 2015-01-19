@@ -81,6 +81,9 @@ public class UimaDeployer {
 	}
 
     private UimaDeployer(final DeployerSettings settings) throws Exception {
+        // An undocumented little "feature" of UIMA-AS: if you undeploy it with
+        // the property dontKill missing, it will just call System.exit(0).
+        System.setProperty("dontKill", "true");
         uimaAsynchronousEngine =
                 new BaseUIMAAsynchronousEngine_impl();
 
