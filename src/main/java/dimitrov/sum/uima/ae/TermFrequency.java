@@ -33,6 +33,7 @@ public class TermFrequency extends CasAnnotator_ImplBase {
     private Feature termSurfaceFeature;
     private Feature termObservationsFeature;
 
+    private static boolean done = false;
     private static TermFrequencies<String,TermFreqRecord> documentFrequencies;
 
 
@@ -65,6 +66,12 @@ public class TermFrequency extends CasAnnotator_ImplBase {
         log.log(Level.INFO, "Finished Term Frequency annotation.");
     }
 
+    public static TermFrequencies<String, TermFreqRecord> getCollectionFreqs() {
+        if (done)
+            return documentFrequencies;
+        else
+            return null;
+    }
 
     private void recordObservationInCas(final CAS aCAS, final String term,
                                         final List<AnnotationFS> observations, final String docUri) {
@@ -102,6 +109,7 @@ public class TermFrequency extends CasAnnotator_ImplBase {
 
     @Override
     public void collectionProcessComplete() throws AnalysisEngineProcessException {
+        done = true;
         log.log(Level.INFO, "COLLECTION PROCESS COMPLETE.");
         final Collection<Map.Entry<String,List<TermFreqRecord>>> docFreqs = documentFrequencies.entrySet();
         final int totalNumberOfTerms = docFreqs.size();
@@ -112,7 +120,7 @@ public class TermFrequency extends CasAnnotator_ImplBase {
                 + " distinct terms over " + totalNumberOfObservations + " observations.");
     }
 
-    private static class TermFreqRecord {
+    public static class TermFreqRecord {
         final int observations;
         final String documentURI;
 

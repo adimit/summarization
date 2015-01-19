@@ -1,6 +1,7 @@
 package dimitrov.sum;
 
 import dimitrov.sum.uima.LocalSourceInfo;
+import dimitrov.sum.uima.ae.TermFrequency;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.aae.client.UimaASProcessStatus;
@@ -128,6 +129,8 @@ public class UimaDeployer {
         try {
             log.info("Processing…");
             uimaAsynchronousEngine.process();
+            final TermFrequencies<String, TermFrequency.TermFreqRecord> freqs = TermFrequency.getCollectionFreqs();
+            log.info("UimaDeployer found {} distinct terms.", freqs.entrySet().size());
             log.info("Undeploying…");
             uimaAsynchronousEngine.undeploy(springContainerId);
             log.info("Stopping…");
