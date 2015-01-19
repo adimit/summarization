@@ -160,8 +160,7 @@ public class UimaDeployer {
             log.info("Using embedded broker.");
             brokerService = new BrokerService();
             brokerService.setBrokerName("UIMA");
-            brokerService.addConnector("tcp://minsk:61616");
-            brokerService.addConnector("vm://UIMA");
+            brokerService.addConnector(settings.brokerUrl);
             brokerService.setUseJmx(false);
 
             brokerService.start();
