@@ -1,5 +1,6 @@
 package dimitrov.sum;
 
+import dimitrov.sum.uima.LocalSourceInfo;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.aae.client.UimaASProcessStatus;
@@ -21,8 +22,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -360,35 +359,9 @@ public class UimaDeployer {
                 }
             }
 
-            File outFile = null;
-            final Type srcDocInfoType = aCas.getTypeSystem().getType(
-                    "org.apache.uima.examples.SourceDocumentInformation");
-            if (srcDocInfoType != null) {
-                final FSIterator<FeatureStructure> it = aCas.getIndexRepository().getAllIndexedFS(srcDocInfoType);
-                if (it.hasNext()) {
-                    final FeatureStructure srcDocInfoFs = it.get();
-                    final Feature uriFeat = srcDocInfoType.getFeatureByBaseName("uri");
-                    final Feature offsetInSourceFeat = srcDocInfoType.getFeatureByBaseName("offsetInSource");
-                    final String uri = srcDocInfoFs.getStringValue(uriFeat);
-                    final int offsetInSource = srcDocInfoFs.getIntValue(offsetInSourceFeat);
-                    try {
-                        final File inFile = new File(new URL(uri).getPath());
-                        String outFileName = inFile.getName();
-                        if (offsetInSource > 0) {
-                            outFileName += ("_" + offsetInSource);
-                        }
-                        outFile = new File(outputDir, outFileName + ".xmi");
-                        log.debug("Finished annotation of {}. Outputting to {}", uri, outFile.getName());
-                    } catch (MalformedURLException e1) {
-                        // invalid URI, use default processing below
-                        log.warn("Invalid URI in SrcDocInfo: {}", uri);
-                    }
-                }
-            }
-            if (outFile == null) {
-                outFile = new File(outputDir, "doc" + entityCount + ".xmi");
-                log.debug("Finished annotation of unknown file. Outputting to {}", outFile.getName());
-            }
+            final LocalSourceInfo sourceInfo = new LocalSourceInfo(aCas);
+            final File outFile = new File(outputDir, sourceInfo.generateXmiFileName());
+            log.debug("Finished annotation of {}. Outputting to {}", sourceInfo.getUri(), outFile.getName());
             try (FileOutputStream outStream = new FileOutputStream(outFile)) {
                     XmiCasSerializer.serialize(aCas, outStream);
             } catch (Exception e) {
