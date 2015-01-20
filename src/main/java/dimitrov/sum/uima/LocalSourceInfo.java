@@ -66,7 +66,7 @@ public class LocalSourceInfo {
 
     private synchronized URI makeGenericURI() {
         final String uri = "file://UnknownFile_" + genericFileCounter++;
-        log.warn("Encountered CAS without SourceDocInfo annotation. Making up name: {}", uri);
+        log.warn("Encountered CAS without, or with erroneous SourceDocInfo annotation. Making up name: {}", uri);
         try {
             return new URI(uri);
         } catch (URISyntaxException e) {
