@@ -26,10 +26,7 @@ import java.util.Iterator;
 /**
  * Created by aleks on 13/12/14.
  *
- * Large parts of this are a verbatim copy of
- * org.apache.uima.examples.cpe.FileSystemCollectionReader.java
- *
- * FIXME: the way we are throwing the CollectionExceptions here is super-sloppy.
+ * See: {@link org.apache.uima.examples.cpe.FileSystemCollectionReader}
  */
 public class DocumentReader extends CollectionReader_ImplBase {
 
@@ -140,17 +137,15 @@ public class DocumentReader extends CollectionReader_ImplBase {
      * @return true if and only if there are more elements available from this
      * <code>CollectionReader</code>.
      * @throws java.io.IOException                            if an I/O failure occurs
-     * @throws org.apache.uima.collection.CollectionException if there is some other problem with reading from the Collection
      */
     @Override
-    public synchronized boolean hasNext() throws IOException, CollectionException {
+    public synchronized boolean hasNext() throws IOException {
         log.debug("DocumentReader.hasNext() is called. We have {} documents left.", totalFiles - progress);
         if (fileIterator != null) {
             return fileIterator.hasNext();
         } else {
             log.error("File stream not initialized when calling hasNext(). Likely a bug in UIMA!");
-            throw new CollectionException(ResourceConfigurationException.CONFIG_SETTING_ABSENT,
-                    new Object[] { PARAM_INPUTDIR });
+            throw new IOException("File stream may not ever be null. Something went wrong with initialization.");
         }
     }
 
