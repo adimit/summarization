@@ -1,9 +1,5 @@
-package dimitrov.sum.uima;
+package dimitrov.sum.uima.reader;
 
-import dimitrov.sum.UimaDeployer;
-import dimitrov.sum.uima.ae.CasPopulater;
-import dimitrov.sum.uima.ae.PlainTextCASPopulater;
-import dimitrov.sum.uima.ae.XmiCASPopulater;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;

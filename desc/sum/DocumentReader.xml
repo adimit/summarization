@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <collectionReaderDescription  xmlns="http://uima.apache.org/resourceSpecifier">
     <frameworkImplementation>org.apache.uima.java</frameworkImplementation>
-    <implementationName>dimitrov.sum.uima.DocumentReader</implementationName>
+    <implementationName>dimitrov.sum.uima.reader.DocumentReader</implementationName>
     <processingResourceMetaData>
         <name>Document Collection Reader</name>
         <description>Read documents to be summarized from a data set.</description>

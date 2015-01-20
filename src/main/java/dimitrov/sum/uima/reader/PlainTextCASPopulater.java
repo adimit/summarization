@@ -1,8 +1,6 @@
-package dimitrov.sum.uima.ae;
+package dimitrov.sum.uima.reader;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.uima.cas.CAS;
-import org.apache.uima.cas.CASException;
 import org.apache.uima.collection.CollectionException;
 import org.apache.uima.examples.SourceDocumentInformation;
 import org.apache.uima.jcas.JCas;

@@ -1,6 +1,6 @@
 package dimitrov.sum;
 
-import dimitrov.sum.uima.DocumentReader;
+import dimitrov.sum.uima.reader.DocumentReader;
 import dimitrov.sum.uima.LocalSourceInfo;
 import dimitrov.sum.uima.ae.TermFrequency;
 import org.apache.activemq.broker.BrokerService;
