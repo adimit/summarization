@@ -50,7 +50,6 @@ public class UimaDeployer {
     public static final String PROP_AS_META_TIMEOUT = "asyncGetMetaTimeout";
     public static final String PROP_BROKER_URL = "brokerURL";
     public static final String PROP_ENDPOINT_NAME = "endpointName";
-    public static final String PROP_DOCUMENT_READER_DESCRIPTOR = "documentReaderDescriptor";
     public static final String PROP_USE_EMBEDDED_BROKER = "useEmbeddedBroker";
     public static final String PROP_OUTPUT_DIRECTORY = "outputDirectory";
     public static final String PROP_INPUT_DIRECTORY = "inputDirectory";
