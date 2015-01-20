@@ -87,9 +87,10 @@ public class UimaDeployer {
 		}
 	}
 
-    private File makePhase1DeploymentDescriptor(final DeployerSettings settings)
+    private File makeDeploymentDescriptor(final DeployerSettings settings, final File tempFile,
+                                          final String name, final String description)
             throws ResourceInitializationException {
-        final ServiceContext context = new ServiceContextImpl("Phase1", "Phase 1 Summarization Annotator",
+        final ServiceContext context = new ServiceContextImpl(name, description,
                 settings.phase1Aggregate, settings.endpointName, settings.brokerUrl);
         context.setCasPoolSize(settings.uimaCasPoolSize);
         context.setScaleup(settings.uimaCasPoolSize);
@@ -98,21 +99,18 @@ public class UimaDeployer {
                 DeploymentDescriptorFactory.createAggregateDeploymentDescriptor(context);
         dd.setAsync(true);
 
-        File ddXML = null;
         try {
-            ddXML = new File("phase1DD.xml");
             final String ddContent = dd.toXML();
-
             log.debug("Deployment descriptor:\n{}", ddContent);
-            FileUtils.writeStringToFile(ddXML, ddContent, Charset.defaultCharset(), false);
-            log.info("Wrote deployment descriptor to {}.", ddXML.getAbsoluteFile());
-            return ddXML;
+            FileUtils.writeStringToFile(tempFile, ddContent, Charset.defaultCharset(), false);
+            log.info("Wrote deployment descriptor to {}.", tempFile.getAbsoluteFile());
+            return tempFile;
         } catch (IOException e) {
             log.error("Failed to write Phase 1 deployment descriptor! Deliting temporary file {}.",
-                    ddXML.getAbsoluteFile(), e);
-            final boolean deleted = ddXML.delete();
+                    tempFile.getAbsoluteFile(), e);
+            final boolean deleted = tempFile.delete();
             if (!deleted)
-                log.warn("Failed to delete {}.", ddXML.getAbsoluteFile());
+                log.warn("Failed to delete {}.", tempFile.getAbsoluteFile());
             throw new ResourceInitializationException(e);
         }
 
@@ -123,7 +121,8 @@ public class UimaDeployer {
         // the property dontKill missing, it will just call System.exit(0).
         System.setProperty("dontKill", "true");
 
-        phase1Descriptor = makePhase1DeploymentDescriptor(settings);
+        final File phase1XML = new File("phase1.xml");
+        phase1Descriptor = makeDeploymentDescriptor(settings, phase1XML, "Phase 1", "Phase 1 deployment.");
 
         uimaAsynchronousEngine = new BaseUIMAAsynchronousEngine_impl();
 
