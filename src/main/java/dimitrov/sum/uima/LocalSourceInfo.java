@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by aleks on 18/01/15.
@@ -21,6 +23,7 @@ public class LocalSourceInfo {
     public final boolean documentIsGeneric;
 
     private static int genericFileCounter = 1;
+    private static final Set<String> xmiNames = new HashSet<>();
 
     public LocalSourceInfo(final CAS cas) {
 
@@ -80,6 +83,12 @@ public class LocalSourceInfo {
     public static String generateXmiFileName(final URI uri, final int offsetInSource) {
         final File temp = new File(uri.getPath());
         final String offset = offsetInSource == 0 ? "" : "_" + offsetInSource;
-        return temp.getName() + offset + ".xmi";
+        String fName = temp.getName() + offset;
+        while (xmiNames.contains(fName)) {
+            fName += "_";
+            log.warn("Renaming because of name collision: {}", fName);
+        }
+        xmiNames.add(fName);
+        return fName + ".xmi";
     }
 }
