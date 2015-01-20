@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Created by aleks on 21/12/14.
  */
-public class UimaDeployer {
+public class UimaDeployer implements Runnable {
 
     private static final Logger log = LoggerFactory.getLogger(UimaDeployer.class);
 

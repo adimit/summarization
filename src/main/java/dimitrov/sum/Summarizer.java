@@ -76,12 +76,18 @@ public class Summarizer {
         }
 
         final UimaDeployer phase1 = new UimaDeployer(phase1Settings);
-        phase1.run();
 
-        LocalSourceInfo.phaseComplete();
+        // Fork off phase 1 processing.
+        final Thread phase1Worker = new Thread(phase1);
+        phase1Worker.start();
 
+        // Meanwhile, initialize phase 2
         final DeployerSettings phase2Settings = new DeployerSettings(properties, "phase2");
         final UimaDeployer phase2 = new UimaDeployer(phase2Settings);
+        LocalSourceInfo.phaseComplete();
+
+        // Wait for phase 1
+        phase1Worker.join();
         phase2.run();
 
         if (brokerService != null) {
