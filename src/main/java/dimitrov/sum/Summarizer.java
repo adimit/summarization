@@ -16,6 +16,8 @@ import java.util.Properties;
  */
 public class Summarizer {
 
+    public static final String termFrequencySerializationFile = "tf.serialized";
+
     private static final Logger log = LoggerFactory.getLogger(UimaDeployer.class);
 
     public static final String SETTINGS_FILE = "Settings.properties";
@@ -76,18 +78,12 @@ public class Summarizer {
         }
 
         final UimaDeployer phase1 = new UimaDeployer(phase1Settings);
+        phase1.run();
 
-        // Fork off phase 1 processing.
-        final Thread phase1Worker = new Thread(phase1);
-        phase1Worker.start();
-
-        // Meanwhile, initialize phase 2
-        final DeployerSettings phase2Settings = new DeployerSettings(properties, "phase2");
-        final UimaDeployer phase2 = new UimaDeployer(phase2Settings);
         LocalSourceInfo.phaseComplete();
+        final DeployerSettings phase2Settings = new DeployerSettings(properties, "phase2");
 
-        // Wait for phase 1
-        phase1Worker.join();
+        final UimaDeployer phase2 = new UimaDeployer(phase2Settings);
         phase2.run();
 
         if (brokerService != null) {
