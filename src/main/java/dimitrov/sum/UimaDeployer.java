@@ -3,7 +3,6 @@ package dimitrov.sum;
 import dimitrov.sum.uima.reader.DocumentReader;
 import dimitrov.sum.uima.LocalSourceInfo;
 import dimitrov.sum.uima.ae.TermFrequency;
-import org.apache.activemq.broker.BrokerService;
 import org.apache.commons.io.FileUtils;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.aae.client.UimaASProcessStatus;
@@ -22,12 +21,10 @@ import org.apache.uima.resourceSpecifier.factory.impl.ServiceContextImpl;
 import org.apache.uima.util.ProcessTraceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,28 +36,6 @@ import java.util.concurrent.TimeUnit;
 public class UimaDeployer {
 
     private static final Logger log = LoggerFactory.getLogger(UimaDeployer.class);
-
-    public static final String SETTINGS_FILE = "Settings.properties";
-
-    // Name constants for settings.
-    public static final String PROP_SERIALIZATION_STRAT = "serializationStrategy";
-    public static final String PROP_CAS_POOL_SIZE = "casPoolSize";
-    public static final String PROP_AS_TIMEOUT = "asyncTimeout";
-    public static final String PROP_AS_CPC_TIMEOUT = "asyncCpcTimeout";
-    public static final String PROP_AS_META_TIMEOUT = "asyncGetMetaTimeout";
-    public static final String PROP_BROKER_URL = "brokerURL";
-    public static final String PROP_ENDPOINT_NAME = "endpointName";
-    public static final String PROP_USE_EMBEDDED_BROKER = "useEmbeddedBroker";
-    public static final String PROP_OUTPUT_DIRECTORY = "outputDirectory";
-    public static final String PROP_INPUT_DIRECTORY = "inputDirectory";
-    public static final String PROP_PHASE_1_AGGREGATE = "phase1AggregateDescriptor";
-
-    // Defaults for settings
-    private static final int DEFAULT_CAS_POOL_SIZE = 1;
-	private static final int DEFAULT_AS_TIMEOUT = 10;
-	private static final int DEFAULT_AS_CPC_TIMEOUT = 10;
-	private static final int DEFAULT_AS_META_TIMEOUT = 10;
-    private static final int FS_HEAP_SIZE = 2000000;
 
     /**
      * Start time of the processing - used to compute elapsed time.
@@ -75,20 +50,8 @@ public class UimaDeployer {
     private String springContainerId = null;
     private UimaAsynchronousEngine uimaAsynchronousEngine;
 
-    // A wrapper to extract a numeric property from a Properties object, with a default
-	// failover.
-	private static int getNumericProperty(final Properties p, String pName, int def) {
-		final String value = p.getProperty(pName);
-		try {
-			return(Integer.parseInt(value));
-		} catch (NumberFormatException nfe) {
-			log.warn("Couldn't parse {} in setting {}, substituting default {}.", value, pName, def);
-			return(def);
-		}
-	}
-
-    private File makeDeploymentDescriptor(final DeployerSettings settings, final File tempFile,
-                                          final String name, final String description)
+    private void writeDeploymentDescriptor(final DeployerSettings settings, final File tempFile,
+                                           final String name, final String description)
             throws ResourceInitializationException {
         final ServiceContext context = new ServiceContextImpl(name, description,
                 settings.phase1Aggregate, settings.endpointName, settings.brokerUrl);
@@ -104,7 +67,6 @@ public class UimaDeployer {
             log.debug("Deployment descriptor:\n{}", ddContent);
             FileUtils.writeStringToFile(tempFile, ddContent, Charset.defaultCharset(), false);
             log.info("Wrote deployment descriptor to {}.", tempFile.getAbsoluteFile());
-            return tempFile;
         } catch (IOException e) {
             log.error("Failed to write Phase 1 deployment descriptor! Deliting temporary file {}.",
                     tempFile.getAbsoluteFile(), e);
@@ -116,13 +78,13 @@ public class UimaDeployer {
 
     }
 
-    private UimaDeployer(final DeployerSettings settings) throws Exception {
+    public UimaDeployer(final DeployerSettings settings) throws Exception {
         // An undocumented little "feature" of UIMA-AS: if you undeploy it with
         // the property dontKill missing, it will just call System.exit(0).
         System.setProperty("dontKill", "true");
 
-        final File phase1XML = new File("phase1.xml");
-        phase1Descriptor = makeDeploymentDescriptor(settings, phase1XML, "Phase 1", "Phase 1 deployment.");
+        phase1Descriptor = new File("phase1.xml");
+        writeDeploymentDescriptor(settings, phase1Descriptor, "Phase 1", "Phase 1 deployment.");
 
         uimaAsynchronousEngine = new BaseUIMAAsynchronousEngine_impl();
 
@@ -159,13 +121,13 @@ public class UimaDeployer {
         appCtx.put(UimaAsynchronousEngine.ServerUri, settings.brokerUrl);
         appCtx.put(UimaAsynchronousEngine.ENDPOINT, settings.endpointName);
 
-        appCtx.put(UIMAFramework.CAS_INITIAL_HEAP_SIZE, Integer.valueOf(FS_HEAP_SIZE / 4).toString());
+        appCtx.put(UIMAFramework.CAS_INITIAL_HEAP_SIZE, Integer.valueOf(DeployerSettings.FS_HEAP_SIZE / 4).toString());
 
         log.info("Initializing UIMA As.");
         uimaAsynchronousEngine.initialize(appCtx);
     }
 
-    private void run() {
+    public void run() {
         try {
             log.info("Processing…");
             uimaAsynchronousEngine.process();
@@ -180,112 +142,7 @@ public class UimaDeployer {
 
             log.info("Halt.");
         } catch (Exception e) {
-            croak(e, "Failed asynchronous processing!");
-        }
-    }
-
-    public static void main(String[] args) throws Exception {
-        SLF4JBridgeHandler.removeHandlersForRootLogger();
-        SLF4JBridgeHandler.install();
-
-        log.info("Initializing.");
-
-        final Properties properties = new Properties();
-        try {
-            final ClassLoader loader = ClassLoader.getSystemClassLoader();
-            final InputStream is = loader.getResourceAsStream(SETTINGS_FILE);
-            if (is == null) {
-                croak("Couldn't open stream to " + SETTINGS_FILE);
-            }
-            properties.load(is);
-        } catch (IOException e) {
-            croak(e, "CRITICAL: Couldn't load properties at " + SETTINGS_FILE);
-        }
-
-        final DeployerSettings settings = new DeployerSettings(properties);
-
-        BrokerService brokerService = null;
-        if (settings.useEmbeddedBroker) {
-            log.info("Using embedded broker.");
-            brokerService = new BrokerService();
-            brokerService.setBrokerName("UIMA");
-            brokerService.addConnector(settings.brokerUrl);
-            brokerService.setUseJmx(false);
-
-            brokerService.start();
-        } else {
-            log.info("Using external broker.");
-        }
-
-        final UimaDeployer runner = new UimaDeployer(settings);
-        runner.run();
-
-        if (brokerService != null) {
-            log.info("Stopping embedded broker.");
-            brokerService.stop();
-        }
-
-        log.info("Completed.");
-    }
-
-    // croak v. /krəʊk/. 1. to utter a low hoarse sound. 2. (informal) to die.
-    private static void croak(Throwable cause, String message) {
-        cause.printStackTrace();
-        log.error(message);
-        System.exit(1);
-    }
-
-    private static void croak(List<? extends Throwable> causes, String message) {
-        causes.forEach(Throwable::printStackTrace);
-        log.error(message);
-        System.exit(1);
-    }
-
-    private static void croak(String message) {
-        log.error(message);
-        System.exit(1);
-    }
-
-    private static class DeployerSettings {
-        final File outputDir;
-        final String inputDir;
-        final String serializationStrategy;
-        final boolean useEmbeddedBroker;
-        final Integer uimaAsTimeout;
-        final Integer uimaAsCpcTimeout;
-        final Integer uimaAsMetaTimeout;
-        final Integer uimaCasPoolSize;
-        final String brokerUrl;
-        final String endpointName;
-        final String phase1Aggregate;
-
-        DeployerSettings(final Properties settings) {
-            // Optional settings
-            this.uimaAsTimeout = 1000 * getNumericProperty(settings, PROP_AS_TIMEOUT, DEFAULT_AS_TIMEOUT);
-            this.uimaAsCpcTimeout = 1000 * getNumericProperty(settings, PROP_AS_CPC_TIMEOUT, DEFAULT_AS_CPC_TIMEOUT);
-            this.uimaAsMetaTimeout = 1000 * getNumericProperty(settings, PROP_AS_META_TIMEOUT, DEFAULT_AS_META_TIMEOUT);
-            this.uimaCasPoolSize = getNumericProperty(settings, PROP_CAS_POOL_SIZE, DEFAULT_CAS_POOL_SIZE);
-
-            // Mandatory settings
-            this.phase1Aggregate = set(settings, PROP_PHASE_1_AGGREGATE);
-            this.brokerUrl = set(settings, PROP_BROKER_URL);
-            this.endpointName = set(settings, PROP_ENDPOINT_NAME);
-            this.serializationStrategy = settings.getProperty(PROP_SERIALIZATION_STRAT, "xmi");
-            this.inputDir = this.set(settings, PROP_INPUT_DIRECTORY);
-            this.useEmbeddedBroker =
-                    set(settings, PROP_USE_EMBEDDED_BROKER).toLowerCase().trim().equals("true");
-            final String outputDirName = set(settings, PROP_OUTPUT_DIRECTORY);
-            this.outputDir = new File(outputDirName);
-            if (!this.outputDir.isDirectory() || !this.outputDir.canWrite()) {
-                croak("Output path " + outputDirName + " is not a directory or is not writable.");
-            }
-        }
-
-        private String set(final Properties settings, String key) {
-            final String result = settings.getProperty(key);
-            if (result == null)
-                croak("Missing mandatory setting: " + key);
-            return result;
+            Summarizer.croak(e, "Failed asynchronous processing!");
         }
     }
 
@@ -343,7 +200,7 @@ public class UimaDeployer {
         private void maybeStopAndCroak(final EntityProcessStatus aStatus, final String message) {
             if (aStatus != null && aStatus.isException()) {
                 stop();
-                croak(aStatus.getExceptions(), message);
+                Summarizer.croak(aStatus.getExceptions(), message);
             }
         }
 
