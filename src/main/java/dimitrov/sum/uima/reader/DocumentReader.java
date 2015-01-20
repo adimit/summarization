@@ -39,9 +39,9 @@ public class DocumentReader extends JCasCollectionReader_ImplBase {
     /**
      * Whether to read XMI files, instead of plain text. Reading XMI files iff value of this setting is "true".
      */
-    public static final String PARAM_READ_XMIS = "isXmiReader";
+    public static final String PARAM_READ_PLAIN_TEXT = "isPlaintextReader";
     @ConfigurationParameter
-    private boolean isXmiReader;
+    private boolean isPlaintextReader;
 
     private Iterator<File> fileIterator; // documents to process.
     private int totalFiles; // documents to process total count.
@@ -60,12 +60,12 @@ public class DocumentReader extends JCasCollectionReader_ImplBase {
                     new Object[] {PARAM_INPUTDIR});
         }
 
-        if (isXmiReader) {
-            // We don't like type errors, so it's always non-lenient;
-            casPopulater = new XmiCASPopulater(false);
-        } else {
+        if (isPlaintextReader) {
             // FIXME: We just use the default encoding, which shouldn't be the case.
             casPopulater = new PlainTextCASPopulater(Charset.defaultCharset());
+        } else {
+            // We don't like type errors, so it's always non-lenient;
+            casPopulater = new XmiCASPopulater(false);
         }
 
         if (!inputDirectory.exists() || !inputDirectory.isDirectory()) {

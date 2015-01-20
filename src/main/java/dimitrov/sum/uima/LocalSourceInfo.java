@@ -91,4 +91,14 @@ public class LocalSourceInfo {
         xmiNames.add(fName);
         return fName + ".xmi";
     }
+
+    /**
+     * This is a hack, and a bad one. Ideally, we'd have access to the Phase settings here, which probably means
+     * we should make {@link dimitrov.sum.uima.LocalSourceInfo} uninstantiable and use a LocalSourceFactory instead,
+     * but I'm too lazy to implement that right now.
+     *
+     * As it stands this *needs* to be called between phases, otherwise we'll have to rename every file that was
+     * already produced in an earlier phase, because the static set of names has already been filled.
+     */
+    public static void phaseComplete() { xmiNames.clear(); }
 }

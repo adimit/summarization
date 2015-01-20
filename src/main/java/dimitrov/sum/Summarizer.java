@@ -1,5 +1,6 @@
 package dimitrov.sum;
 
+import dimitrov.sum.uima.LocalSourceInfo;
 import org.apache.activemq.broker.BrokerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,10 @@ public class Summarizer {
 
         log.info("Initializing.");
 
+        // An undocumented little "feature" of UIMA-AS: if you undeploy it with
+        // the property dontKill missing, it will just call System.exit(0).
+        System.setProperty("dontKill", "true");
+
         final Properties properties = new Properties();
         try {
             final ClassLoader loader = ClassLoader.getSystemClassLoader();
@@ -55,14 +60,14 @@ public class Summarizer {
             croak(e, "CRITICAL: Couldn't load properties at " + SETTINGS_FILE);
         }
 
-        final DeployerSettings settings = new DeployerSettings(properties);
+        final DeployerSettings phase1Settings = new DeployerSettings(properties, "phase1");
 
         BrokerService brokerService = null;
-        if (settings.useEmbeddedBroker) {
+        if (phase1Settings.useEmbeddedBroker) {
             log.info("Using embedded broker.");
             brokerService = new BrokerService();
             brokerService.setBrokerName("UIMA");
-            brokerService.addConnector(settings.brokerUrl);
+            brokerService.addConnector(phase1Settings.brokerUrl);
             brokerService.setUseJmx(false);
 
             brokerService.start();
@@ -70,8 +75,14 @@ public class Summarizer {
             log.info("Using external broker.");
         }
 
-        final UimaDeployer runner = new UimaDeployer(settings);
-        runner.run();
+        final UimaDeployer phase1 = new UimaDeployer(phase1Settings);
+        phase1.run();
+
+        LocalSourceInfo.phaseComplete();
+
+        final DeployerSettings phase2Settings = new DeployerSettings(properties, "phase2");
+        final UimaDeployer phase2 = new UimaDeployer(phase2Settings);
+        phase2.run();
 
         if (brokerService != null) {
             log.info("Stopping embedded broker.");

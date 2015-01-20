@@ -26,7 +26,7 @@
         </flowConstraints>
         <operationalProperties>
             <modifiesCas>true</modifiesCas>
-            <multipleDeploymentAllowed>false</multipleDeploymentAllowed>
+            <multipleDeploymentAllowed>true</multipleDeploymentAllowed>
             <outputsNewCASes>false</outputsNewCASes>
         </operationalProperties>
     </analysisEngineMetaData>

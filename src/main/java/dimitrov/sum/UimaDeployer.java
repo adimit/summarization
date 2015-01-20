@@ -2,7 +2,6 @@ package dimitrov.sum;
 
 import dimitrov.sum.uima.reader.DocumentReader;
 import dimitrov.sum.uima.LocalSourceInfo;
-import dimitrov.sum.uima.ae.TermFrequency;
 import org.apache.commons.io.FileUtils;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.aae.client.UimaASProcessStatus;
@@ -42,7 +41,7 @@ public class UimaDeployer {
      */
     private static long mStartTime = System.currentTimeMillis();
 
-    private final File phase1Descriptor;
+    private final File aeDescriptor;
 
     // For logging CAS activity
     private ConcurrentHashMap<String, Long> casMap = new ConcurrentHashMap<>();
@@ -54,7 +53,7 @@ public class UimaDeployer {
                                            final String name, final String description)
             throws ResourceInitializationException {
         final ServiceContext context = new ServiceContextImpl(name, description,
-                settings.phase1Aggregate, settings.endpointName, settings.brokerUrl);
+                settings.aggregateAE, settings.endpointName, settings.brokerUrl);
         context.setCasPoolSize(settings.uimaCasPoolSize);
         context.setScaleup(settings.uimaCasPoolSize);
 
@@ -79,12 +78,8 @@ public class UimaDeployer {
     }
 
     public UimaDeployer(final DeployerSettings settings) throws Exception {
-        // An undocumented little "feature" of UIMA-AS: if you undeploy it with
-        // the property dontKill missing, it will just call System.exit(0).
-        System.setProperty("dontKill", "true");
-
-        phase1Descriptor = new File("phase1.xml");
-        writeDeploymentDescriptor(settings, phase1Descriptor, "Phase 1", "Phase 1 deployment.");
+        aeDescriptor = new File(settings.phase + ".xml");
+        writeDeploymentDescriptor(settings, aeDescriptor, settings.phase, settings.phase + " deployment.");
 
         uimaAsynchronousEngine = new BaseUIMAAsynchronousEngine_impl();
 
@@ -99,7 +94,7 @@ public class UimaDeployer {
         final CollectionReaderDescription cd = CollectionReaderFactory.createReaderDescription(
                 DocumentReader.class,
                 DocumentReader.PARAM_INPUTDIR, settings.inputDir,
-                DocumentReader.PARAM_READ_XMIS, false);
+                DocumentReader.PARAM_READ_PLAIN_TEXT, settings.readPlainText);
 
         final CollectionReader collectionReader = UIMAFramework.produceCollectionReader(cd);
         uimaAsynchronousEngine.setCollectionReader(collectionReader);
@@ -110,9 +105,9 @@ public class UimaDeployer {
         appCtx.put(UimaAsynchronousEngine.GetMetaTimeout, settings.uimaAsMetaTimeout);
         appCtx.put(UimaAsynchronousEngine.CasPoolSize, settings.uimaCasPoolSize);
 
-        log.info("Deploying AE.");
+        log.info("Deploying {} AE.", settings.phase);
         final long deployStart = System.currentTimeMillis();
-        springContainerId = uimaAsynchronousEngine.deploy(phase1Descriptor.getAbsolutePath(), appCtx);
+        springContainerId = uimaAsynchronousEngine.deploy(aeDescriptor.getAbsolutePath(), appCtx);
         final long deployEnd = System.currentTimeMillis();
         log.info("Deployment took {}.", renderMillis(deployEnd - deployStart));
 
@@ -131,16 +126,13 @@ public class UimaDeployer {
         try {
             log.info("Processing…");
             uimaAsynchronousEngine.process();
-            final TermFrequencies<String, TermFrequency.TermFreqRecord> freqs = TermFrequency.getCollectionFreqs();
-            log.info("UimaDeployer found {} distinct terms.", freqs.entrySet().size());
             log.info("Undeploying…");
             uimaAsynchronousEngine.undeploy(springContainerId);
             log.info("Stopping…");
             uimaAsynchronousEngine.stop();
-            if (!phase1Descriptor.delete())
-                log.warn("Couldn't delete phase 1 descriptor at {}!", phase1Descriptor.getAbsoluteFile());
-
-            log.info("Halt.");
+            if (!aeDescriptor.delete())
+                log.warn("Couldn't delete phase 1 descriptor at {}!", aeDescriptor.getAbsoluteFile());
+            log.info("Halted.");
         } catch (Exception e) {
             Summarizer.croak(e, "Failed asynchronous processing!");
         }

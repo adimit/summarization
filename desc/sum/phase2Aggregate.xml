@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<analysisEngineDescription xmlns="http://uima.apache.org/resourceSpecifier">
+    <frameworkImplementation>org.apache.uima.java</frameworkImplementation>
+    <primitive>false</primitive>
+    <delegateAnalysisEngineSpecifiers>
+        <delegateAnalysisEngine key="TFIDFAE">
+            <import location="TFIDFAE.xml"/>
+        </delegateAnalysisEngine>
+    </delegateAnalysisEngineSpecifiers>
+    <analysisEngineMetaData>
+        <name>Simple Test</name>
+        <version>${pom.version}</version>
+        <vendor>Aleksandar Dimitrov</vendor>
+        <flowConstraints>
+            <fixedFlow>
+                <node>TFIDFAE</node>
+            </fixedFlow>
+        </flowConstraints>
+        <operationalProperties>
+            <modifiesCas>true</modifiesCas>
+            <multipleDeploymentAllowed>false</multipleDeploymentAllowed>
+            <outputsNewCASes>false</outputsNewCASes>
+        </operationalProperties>
+    </analysisEngineMetaData>
+    <resourceManagerConfiguration/>
+</analysisEngineDescription>
