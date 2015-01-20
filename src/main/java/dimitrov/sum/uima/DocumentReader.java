@@ -1,16 +1,16 @@
 package dimitrov.sum.uima;
 
 import dimitrov.sum.UimaDeployer;
+import dimitrov.sum.uima.ae.CasPopulater;
+import dimitrov.sum.uima.ae.PlainTextCASPopulater;
+import dimitrov.sum.uima.ae.XmiCASPopulater;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.uima.UIMA_IllegalArgumentException;
 import org.apache.uima.cas.CAS;
-import org.apache.uima.cas.CASException;
 import org.apache.uima.collection.CollectionException;
 import org.apache.uima.collection.CollectionReader_ImplBase;
-import org.apache.uima.examples.SourceDocumentInformation;
-import org.apache.uima.jcas.JCas;
 import org.apache.uima.resource.ResourceConfigurationException;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Progress;
@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -31,10 +32,15 @@ import java.util.Iterator;
 public class DocumentReader extends CollectionReader_ImplBase {
 
     private static final String PARAM_INPUTDIR = UimaDeployer.PROP_INPUT_DIRECTORY;
+    private static final String PARAM_READ_XMIS = "readXMI";
 
     private Iterator<File> fileIterator; // documents to process.
     private int totalFiles; // documents to process total count.
     private int progress; // documents already processed.
+
+    private boolean xmiReader;
+
+    private CasPopulater casPopulater;
 
     private static final Logger log = LoggerFactory.getLogger(DocumentReader.class);
 
@@ -47,10 +53,20 @@ public class DocumentReader extends CollectionReader_ImplBase {
             throw new ResourceInitializationException(ResourceInitializationException.CONFIG_SETTING_ABSENT,
                     new Object[] {PARAM_INPUTDIR});
         }
+
+        final String readingMode = (String) getConfigParameterValue(PARAM_READ_XMIS);
+        if (readingMode == null || !readingMode.equals("true")) {
+            // FIXME: We just use the default encoding, which shouldn't be the case.
+            casPopulater = new PlainTextCASPopulater(Charset.defaultCharset());
+        } else {
+            // We don't like type errors, so it's always non-lenient;
+            casPopulater = new XmiCASPopulater(false);
+        }
+
         final File srcDirectory =
                 new File (inputDirParam.trim());
 
-        if (!(srcDirectory.exists() && srcDirectory.isDirectory())) {
+        if (!srcDirectory.exists() || !srcDirectory.isDirectory()) {
             throw new ResourceInitializationException(ResourceConfigurationException.DIRECTORY_NOT_FOUND,
                     new Object[] { PARAM_INPUTDIR, this.getMetaData().getName(), srcDirectory.getPath() });
         }
@@ -89,33 +105,8 @@ public class DocumentReader extends CollectionReader_ImplBase {
             throw new UIMA_IllegalArgumentException(UIMA_IllegalArgumentException.ILLEGAL_ARGUMENT,
                     new Object[] {"null", "aCAS", "getNext"});
         }
-        final JCas jcas;
-        try {
-            jcas = aCAS.getJCas();
-        } catch (CASException e) {
-            throw new CollectionException(e);
-        }
-        // FIXME: We just use the default encoding, which shouldn't be the case.
-        final String fContents = FileUtils.readFileToString(f);
-        jcas.setDocumentText(fContents);
 
-        final SourceDocumentInformation srcInfo = new SourceDocumentInformation(jcas);
-        srcInfo.setUri(f.getAbsoluteFile().toURI().toString());
-        srcInfo.setOffsetInSource(0);
-        srcInfo.setLastSegment(progress == totalFiles);
-
-        // good graces, I have *no* idea who was stupid enough to make
-        // documentSize an int, but we have to live with it.
-        final long fSize = f.length();
-        if (fSize > Integer.MAX_VALUE) {
-            log.warn("File size of '{}' is larger than Integer.MAX_VALUE bytes. CAS document size unreliable!",
-                    f.getAbsoluteFile().toString());
-            srcInfo.setDocumentSize(Integer.MAX_VALUE);
-        } else {
-            srcInfo.setDocumentSize((int) f.length());
-        }
-
-        srcInfo.addToIndexes();
+        casPopulater.populateCAS(aCAS, f);
     }
 
     /**
