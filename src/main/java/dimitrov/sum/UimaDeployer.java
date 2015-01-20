@@ -50,7 +50,6 @@ public class UimaDeployer {
     public static final String PROP_AS_META_TIMEOUT = "asyncGetMetaTimeout";
     public static final String PROP_BROKER_URL = "brokerURL";
     public static final String PROP_ENDPOINT_NAME = "endpointName";
-    public static final String PROP_DEPLOYMENT_DESCRIPTOR = "deploymentDescriptor";
     public static final String PROP_DOCUMENT_READER_DESCRIPTOR = "documentReaderDescriptor";
     public static final String PROP_USE_EMBEDDED_BROKER = "useEmbeddedBroker";
     public static final String PROP_OUTPUT_DIRECTORY = "outputDirectory";
@@ -260,7 +259,6 @@ public class UimaDeployer {
         final Integer uimaCasPoolSize;
         final String brokerUrl;
         final String endpointName;
-        final String documentReaderDescriptor;
         final String phase1Aggregate;
 
         DeployerSettings(final Properties settings) {
@@ -275,7 +273,6 @@ public class UimaDeployer {
             this.brokerUrl = set(settings, PROP_BROKER_URL);
             this.endpointName = set(settings, PROP_ENDPOINT_NAME);
             this.serializationStrategy = settings.getProperty(PROP_SERIALIZATION_STRAT, "xmi");
-            this.documentReaderDescriptor = set(settings, PROP_DOCUMENT_READER_DESCRIPTOR);
             this.inputDir = this.set(settings, PROP_INPUT_DIRECTORY);
             this.useEmbeddedBroker =
                     set(settings, PROP_USE_EMBEDDED_BROKER).toLowerCase().trim().equals("true");
