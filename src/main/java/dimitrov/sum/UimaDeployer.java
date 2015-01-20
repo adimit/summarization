@@ -1,5 +1,6 @@
 package dimitrov.sum;
 
+import dimitrov.sum.uima.DocumentReader;
 import dimitrov.sum.uima.LocalSourceInfo;
 import dimitrov.sum.uima.ae.TermFrequency;
 import org.apache.activemq.broker.BrokerService;
@@ -14,11 +15,11 @@ import org.apache.uima.cas.impl.XmiCasSerializer;
 import org.apache.uima.collection.CollectionReader;
 import org.apache.uima.collection.CollectionReaderDescription;
 import org.apache.uima.collection.EntityProcessStatus;
+import org.apache.uima.fit.factory.CollectionReaderFactory;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.resourceSpecifier.factory.*;
 import org.apache.uima.resourceSpecifier.factory.impl.ServiceContextImpl;
 import org.apache.uima.util.ProcessTraceEvent;
-import org.apache.uima.util.XMLInputSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -136,10 +137,12 @@ public class UimaDeployer {
                 + "/saxon/saxon8.jar");
 
         log.info("Initializing Collection Reader");
-        final CollectionReaderDescription collectionReaderDescription = UIMAFramework.getXMLParser()
-                .parseCollectionReaderDescription(new XMLInputSource(settings.documentReaderDescriptor));
-        final CollectionReader collectionReader = UIMAFramework
-                .produceCollectionReader(collectionReaderDescription);
+        final CollectionReaderDescription cd = CollectionReaderFactory.createReaderDescription(
+                DocumentReader.class,
+                DocumentReader.PARAM_INPUTDIR, settings.inputDir,
+                DocumentReader.PARAM_READ_XMIS, false);
+
+        final CollectionReader collectionReader = UIMAFramework.produceCollectionReader(cd);
         uimaAsynchronousEngine.setCollectionReader(collectionReader);
         uimaAsynchronousEngine.addStatusCallbackListener(new StatusCallbackListenerImpl(settings.outputDir));
 
@@ -248,6 +251,7 @@ public class UimaDeployer {
 
     private static class DeployerSettings {
         final File outputDir;
+        final String inputDir;
         final String serializationStrategy;
         final boolean useEmbeddedBroker;
         final Integer uimaAsTimeout;
@@ -272,6 +276,7 @@ public class UimaDeployer {
             this.endpointName = set(settings, PROP_ENDPOINT_NAME);
             this.serializationStrategy = settings.getProperty(PROP_SERIALIZATION_STRAT, "xmi");
             this.documentReaderDescriptor = set(settings, PROP_DOCUMENT_READER_DESCRIPTOR);
+            this.inputDir = this.set(settings, PROP_INPUT_DIRECTORY);
             this.useEmbeddedBroker =
                     set(settings, PROP_USE_EMBEDDED_BROKER).toLowerCase().trim().equals("true");
             final String outputDirName = set(settings, PROP_OUTPUT_DIRECTORY);

@@ -8,9 +8,11 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.uima.UIMA_IllegalArgumentException;
-import org.apache.uima.cas.CAS;
+import org.apache.uima.UimaContext;
 import org.apache.uima.collection.CollectionException;
-import org.apache.uima.collection.CollectionReader_ImplBase;
+import org.apache.uima.fit.component.JCasCollectionReader_ImplBase;
+import org.apache.uima.fit.descriptor.ConfigurationParameter;
+import org.apache.uima.jcas.JCas;
 import org.apache.uima.resource.ResourceConfigurationException;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Progress;
@@ -29,50 +31,54 @@ import java.util.Iterator;
  *
  * See: {@link org.apache.uima.examples.cpe.FileSystemCollectionReader}
  */
-public class DocumentReader extends CollectionReader_ImplBase {
+public class DocumentReader extends JCasCollectionReader_ImplBase {
 
-    private static final String PARAM_INPUTDIR = UimaDeployer.PROP_INPUT_DIRECTORY;
-    private static final String PARAM_READ_XMIS = "readXMI";
+    /**
+     * Directory from which to read files.
+     */
+    public static final String PARAM_INPUTDIR = "inputDirectory";
+    @ConfigurationParameter
+    private File inputDirectory;
+
+    /**
+     * Whether to read XMI files, instead of plain text. Reading XMI files iff value of this setting is "true".
+     */
+    public static final String PARAM_READ_XMIS = "isXmiReader";
+    @ConfigurationParameter
+    private boolean isXmiReader;
 
     private Iterator<File> fileIterator; // documents to process.
     private int totalFiles; // documents to process total count.
     private int progress; // documents already processed.
-
-    private boolean xmiReader;
 
     private CasPopulater casPopulater;
 
     private static final Logger log = LoggerFactory.getLogger(DocumentReader.class);
 
     @Override
-    public void initialize() throws ResourceInitializationException {
+    public void initialize(final UimaContext context) throws ResourceInitializationException {
         log.info("Initializing Document Reader.");
-        final String inputDirParam = (String) getConfigParameterValue(PARAM_INPUTDIR);
-        if (inputDirParam == null) {
+        if (inputDirectory == null) {
             log.error("Couldn't find input directory parameter setting!");
             throw new ResourceInitializationException(ResourceInitializationException.CONFIG_SETTING_ABSENT,
                     new Object[] {PARAM_INPUTDIR});
         }
 
-        final String readingMode = (String) getConfigParameterValue(PARAM_READ_XMIS);
-        if (readingMode == null || !readingMode.equals("true")) {
-            // FIXME: We just use the default encoding, which shouldn't be the case.
-            casPopulater = new PlainTextCASPopulater(Charset.defaultCharset());
-        } else {
+        if (isXmiReader) {
             // We don't like type errors, so it's always non-lenient;
             casPopulater = new XmiCASPopulater(false);
+        } else {
+            // FIXME: We just use the default encoding, which shouldn't be the case.
+            casPopulater = new PlainTextCASPopulater(Charset.defaultCharset());
         }
 
-        final File srcDirectory =
-                new File (inputDirParam.trim());
-
-        if (!srcDirectory.exists() || !srcDirectory.isDirectory()) {
+        if (!inputDirectory.exists() || !inputDirectory.isDirectory()) {
             throw new ResourceInitializationException(ResourceConfigurationException.DIRECTORY_NOT_FOUND,
-                    new Object[] { PARAM_INPUTDIR, this.getMetaData().getName(), srcDirectory.getPath() });
+                    new Object[] { PARAM_INPUTDIR, this.getMetaData().getName(), inputDirectory.getPath() });
         }
 
         final IOFileFilter always = FileFilterUtils.trueFileFilter();
-        final Collection<File> files = FileUtils.listFiles(srcDirectory, always, always);
+        final Collection<File> files = FileUtils.listFiles(inputDirectory, always, always);
 
         // Unfortunately, iterators are not suited to keeping
         // track of progress, so we need to do it manually.
@@ -91,22 +97,22 @@ public class DocumentReader extends CollectionReader_ImplBase {
      * If this is a consuming <code>CollectionReader</code> (see {@link #isConsuming()}), this
      * element will also be removed from the collection.
      *
-     * @param aCAS the CAS to populate with the next element of the collection
+     * @param cas the CAS to populate with the next element of the collection
      * @throws org.apache.uima.UIMA_IllegalStateException     if there are no more elements left in the collection
      * @throws java.io.IOException                            if an I/O failure occurs
      * @throws org.apache.uima.collection.CollectionException if there is some other problem with reading from the Collection
      */
     @Override
-    public synchronized void getNext(CAS aCAS) throws IOException, CollectionException {
+    public synchronized void getNext(JCas cas) throws IOException, CollectionException {
         final File f = this.getNextFile();
         log.info("Next document: {}", f.getName());
-        if (aCAS == null) {
+        if (cas == null) {
             log.error("Got a null cas.");
             throw new UIMA_IllegalArgumentException(UIMA_IllegalArgumentException.ILLEGAL_ARGUMENT,
                     new Object[] {"null", "aCAS", "getNext"});
         }
 
-        casPopulater.populateCAS(aCAS, f);
+        casPopulater.populateCAS(cas, f);
     }
 
     /**

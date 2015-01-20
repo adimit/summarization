@@ -27,18 +27,12 @@ public class PlainTextCASPopulater implements CasPopulater {
     }
 
     @Override
-    public void populateCAS(CAS cas, File fromFile) throws IOException, CollectionException {
-        final JCas jcas;
-        try {
-            jcas = cas.getJCas();
-        } catch (CASException e) {
-            throw new CollectionException(e);
-        }
+    public void populateCAS(JCas cas, File fromFile) throws IOException, CollectionException {
         // FIXME: We just use the default encoding, which shouldn't be the case.
         final String fContents = FileUtils.readFileToString(fromFile, this.encoding);
-        jcas.setDocumentText(fContents);
+        cas.setDocumentText(fContents);
 
-        final SourceDocumentInformation srcInfo = new SourceDocumentInformation(jcas);
+        final SourceDocumentInformation srcInfo = new SourceDocumentInformation(cas);
         srcInfo.setUri(fromFile.getAbsoluteFile().toURI().toString());
         srcInfo.setOffsetInSource(0);
 
