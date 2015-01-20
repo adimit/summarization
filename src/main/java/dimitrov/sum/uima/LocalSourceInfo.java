@@ -12,7 +12,7 @@ import java.net.URISyntaxException;
  * Created by aleks on 18/01/15.
  */
 public class LocalSourceInfo {
-    protected final Logger log = LoggerFactory.getLogger(LocalSourceInfo.class);
+    protected static final Logger log = LoggerFactory.getLogger(LocalSourceInfo.class);
 
     private URI uri;
     public final int documentSize;
