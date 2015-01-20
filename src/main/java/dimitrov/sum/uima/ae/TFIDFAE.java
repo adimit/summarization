@@ -72,7 +72,7 @@ public class TFIDFAE extends CasAnnotator_ImplBase {
         log.log(Level.INFO, "Starting processing of TFIDFAE.");
         final Map<String, Double> tfidfs = new HashMap<>();
         final FSIndex<AnnotationFS> termIndex = aCAS.getAnnotationIndex(termFrequencyType);
-        termIndex.forEach(term -> putTfidf(term, aCAS, tfidfs));
+        termIndex.forEach(term -> putTFIDF(term, aCAS, tfidfs));
         final FSIndex<AnnotationFS> tokenIndex = aCAS.getAnnotationIndex(tokenType);
         tokenIndex.forEach(token -> setTFIDF(tfidfs, token));
     }
@@ -82,7 +82,7 @@ public class TFIDFAE extends CasAnnotator_ImplBase {
         token.setDoubleValue(tfidfFeature, tfidf);
     }
 
-    private void putTfidf(final AnnotationFS term, final CAS aCAS, final Map<String, Double> tfidfs) {
+    private void putTFIDF(final AnnotationFS term, final CAS aCAS, final Map<String, Double> tfidfs) {
         final int frequency = term.getIntValue(termFrequencyFeature);
         final String surface = term.getStringValue(termSurfaceFeature);
         final Double tfidf = computeTFIDF(frequency, docFreqOf(surface));
