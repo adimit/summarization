@@ -25,14 +25,14 @@ public class DeployerSettings {
     public static final String PROP_OUTPUT_DIRECTORY = "outputDirectory";
     public static final String PROP_INPUT_DIRECTORY = "inputDirectory";
     public static final String PROP_PHASE_1_AGGREGATE = "phase1AggregateDescriptor";
+    public static final String PROP_FS_HEAP_SIZE = "fsHeapSize";
 
     // Defaults for settings
     private static final int DEFAULT_CAS_POOL_SIZE = 1;
     private static final int DEFAULT_AS_TIMEOUT = 10;
     private static final int DEFAULT_AS_CPC_TIMEOUT = 10;
     private static final int DEFAULT_AS_META_TIMEOUT = 10;
-
-    public static final int FS_HEAP_SIZE = 2000000;
+    private static final int DEFAULT_FS_HEAP_SIZE = 500000;
 
     protected static final Logger log = LoggerFactory.getLogger(DeployerSettings.class);
 
@@ -47,6 +47,7 @@ public class DeployerSettings {
     public final String brokerUrl;
     public final String endpointName;
     public final String phase1Aggregate;
+    public final int fsHeapSize;
 
     DeployerSettings(final Properties settings) {
         // Optional settings
@@ -54,6 +55,7 @@ public class DeployerSettings {
         this.uimaAsCpcTimeout = 1000 * getNumericProperty(settings, PROP_AS_CPC_TIMEOUT, DEFAULT_AS_CPC_TIMEOUT);
         this.uimaAsMetaTimeout = 1000 * getNumericProperty(settings, PROP_AS_META_TIMEOUT, DEFAULT_AS_META_TIMEOUT);
         this.uimaCasPoolSize = getNumericProperty(settings, PROP_CAS_POOL_SIZE, DEFAULT_CAS_POOL_SIZE);
+        this.fsHeapSize = getNumericProperty(settings, PROP_FS_HEAP_SIZE, DEFAULT_FS_HEAP_SIZE);
 
         // Mandatory settings
         this.phase1Aggregate = set(settings, PROP_PHASE_1_AGGREGATE);

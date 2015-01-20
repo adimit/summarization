@@ -121,7 +121,7 @@ public class UimaDeployer {
         appCtx.put(UimaAsynchronousEngine.ServerUri, settings.brokerUrl);
         appCtx.put(UimaAsynchronousEngine.ENDPOINT, settings.endpointName);
 
-        appCtx.put(UIMAFramework.CAS_INITIAL_HEAP_SIZE, Integer.valueOf(DeployerSettings.FS_HEAP_SIZE / 4).toString());
+        appCtx.put(UIMAFramework.CAS_INITIAL_HEAP_SIZE, Integer.valueOf(settings.fsHeapSize).toString());
 
         log.info("Initializing UIMA As.");
         uimaAsynchronousEngine.initialize(appCtx);
