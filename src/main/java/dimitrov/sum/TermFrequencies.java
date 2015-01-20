@@ -37,4 +37,6 @@ public class TermFrequencies<T,E> implements Serializable {
     }
 
     public Collection<Entry<T,List<E>>> entrySet() { return tf.entrySet(); }
+
+    public synchronized Optional<List<E>> get(final T t) { return Optional.ofNullable(tf.get(t)); }
 }

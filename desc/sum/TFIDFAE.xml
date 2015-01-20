@@ -39,8 +39,20 @@
                 <multiValued>false</multiValued>
                 <mandatory>true</mandatory>
             </configurationParameter>
+            <configurationParameter>
+                <name>dimitrov.sum.TFIDFFeature</name>
+                <type>String</type>
+                <multiValued>false</multiValued>
+                <mandatory>true</mandatory>
+            </configurationParameter>
         </configurationParameters>
         <configurationParameterSettings>
+            <nameValuePair>
+                <name>dimitrov.sum.TFIDFFeature</name>
+                <value>
+                    <string>tfidf</string>
+                </value>
+            </nameValuePair>
             <nameValuePair>
                 <name>opennlp.uima.TokenType</name>
                 <value>
@@ -80,10 +92,11 @@
         <capabilities>
             <capability>
                 <inputs>
-                    <type allAnnotatorFeatures="true">opennlp.uima.Token</type>
+                    <type allAnnotatorFeatures="true">opennlp.uima.Term</type>
                 </inputs>
                 <outputs>
-                    <type allAnnotatorFeatures="true">dimitrov.sum.Term</type>
+                    <type>opennlp.uima.Token</type>
+                    <feature>opennlp.uima.Token:tfidf</feature>
                 </outputs>
                 <languagesSupported>
                     <language>en</language>

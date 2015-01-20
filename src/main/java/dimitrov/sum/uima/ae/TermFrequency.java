@@ -142,6 +142,7 @@ public class TermFrequency extends CasAnnotator_ImplBase {
             this.documentURI = documentURI;
         }
 
+        public String getDocumentURI() { return documentURI; }
         int getObservations() { return observations; }
     }
 }
