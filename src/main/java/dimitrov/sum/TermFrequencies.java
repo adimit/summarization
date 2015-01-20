@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TermFrequencies<T,E> implements Serializable {
     private final Map<T,List<E>> tf;
 
-    static final long serialVersionUID = 1L;
+    public static final long serialVersionUID = 1L;
 
     // TODO: write tests for this class.
     public TermFrequencies() { tf = new ConcurrentHashMap<>(); }

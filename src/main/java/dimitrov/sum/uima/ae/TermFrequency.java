@@ -1,5 +1,6 @@
 package dimitrov.sum.uima.ae;
 
+import dimitrov.sum.Summarizer;
 import dimitrov.sum.TermFrequencies;
 import dimitrov.sum.uima.LocalSourceInfo;
 import dimitrov.sum.uima.Names;
@@ -14,6 +15,7 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
 
+import java.io.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -117,9 +119,21 @@ public class TermFrequency extends CasAnnotator_ImplBase {
                 .reduce(0,(a,b) -> a + b);
         log.log(Level.INFO, "Observed " + totalNumberOfTerms
                 + " distinct terms over " + totalNumberOfObservations + " observations.");
+
+        // Serialize the term frequencies to a file
+        try (final OutputStream file = new FileOutputStream(Summarizer.termFrequencySerializationFile);
+             final OutputStream buffer = new BufferedOutputStream(file);
+             final ObjectOutput output = new ObjectOutputStream(buffer)
+        ) {
+            output.writeObject(documentFrequencies);
+        } catch (IOException e) {
+            log.log(Level.SEVERE, "Could not write to file " + Summarizer.termFrequencySerializationFile);
+            throw new AnalysisEngineProcessException(e);
+        }
     }
 
-    public static class TermFreqRecord {
+    public static class TermFreqRecord implements Serializable {
+        public final static long serialVersionUID = 1L;
         final int observations;
         final String documentURI;
 
