@@ -50,13 +50,11 @@ public class Summarizer {
         // the property dontKill missing, it will just call System.exit(0).
         System.setProperty("dontKill", "true");
 
+        final ClassLoader loader = ClassLoader.getSystemClassLoader();
         final Properties properties = new Properties();
-        try {
-            final ClassLoader loader = ClassLoader.getSystemClassLoader();
-            final InputStream is = loader.getResourceAsStream(SETTINGS_FILE);
-            if (is == null) {
+        try (final InputStream is = loader.getResourceAsStream(SETTINGS_FILE)) {
+            if (is == null)
                 croak("Couldn't open stream to " + SETTINGS_FILE);
-            }
             properties.load(is);
         } catch (IOException e) {
             croak(e, "CRITICAL: Couldn't load properties at " + SETTINGS_FILE);
