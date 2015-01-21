@@ -74,7 +74,6 @@ public class UimaDeployer implements Runnable {
                 log.warn("Failed to delete {}.", tempFile.getAbsoluteFile());
             throw new ResourceInitializationException(e);
         }
-
     }
 
     public UimaDeployer(final DeployerSettings settings) throws Exception {
