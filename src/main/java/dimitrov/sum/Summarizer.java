@@ -9,6 +9,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -45,6 +46,7 @@ public class Summarizer {
         SLF4JBridgeHandler.install();
 
         log.info("Initializing.");
+        final Arguments arguments = new Arguments(args);
 
         // An undocumented little "feature" of UIMA-AS: if you undeploy it with
         // the property dontKill missing, it will just call System.exit(0).
@@ -75,8 +77,10 @@ public class Summarizer {
             log.info("Using external broker.");
         }
 
-        final UimaDeployer phase1 = new UimaDeployer(phase1Settings);
-        phase1.run();
+        if (arguments.startPhase1) {
+            final UimaDeployer phase1 = new UimaDeployer(phase1Settings);
+            phase1.run();
+        }
 
         LocalSourceInfo.phaseComplete();
         final DeployerSettings phase2Settings = new DeployerSettings(properties, "phase2");
@@ -92,4 +96,13 @@ public class Summarizer {
         log.info("Completed.");
     }
 
+    private static class Arguments {
+        final boolean startPhase1;
+        Arguments(String[] args) {
+            if (args.length > 0)
+                this.startPhase1 = !Objects.equals(args[0], "--skip-phase-1");
+            else
+                startPhase1 = true;
+        }
+    }
 }
