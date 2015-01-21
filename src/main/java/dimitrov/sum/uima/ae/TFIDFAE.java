@@ -2,7 +2,9 @@ package dimitrov.sum.uima.ae;
 
 import dimitrov.sum.Summarizer;
 import dimitrov.sum.TermFrequencies;
+import dimitrov.sum.uima.Log10TFIDF;
 import dimitrov.sum.uima.Names;
+import dimitrov.sum.uima.TFIDFComputer;
 import opennlp.uima.util.AnnotatorUtil;
 import opennlp.uima.util.UimaUtil;
 import org.apache.uima.UimaContext;
@@ -33,7 +35,7 @@ public class TFIDFAE extends CasAnnotator_ImplBase {
     private TermFrequencies<String,TermFrequency.TermFreqRecord> documentFrequencies;
     private Feature tfidfFeature;
 
-    private long totalDocumentCount;
+    private TFIDFComputer tfidfComputer;
 
     @Override
     @SuppressWarnings("unchecked") // Since we're deserializing a collection.
@@ -59,9 +61,11 @@ public class TFIDFAE extends CasAnnotator_ImplBase {
         }
 
         log.log(Level.INFO, "Got termFrequencies with " + documentFrequencies.entrySet().size() + " entries.");
-        totalDocumentCount = documentFrequencies.entrySet().stream()
+        final long totalDocumentCount = documentFrequencies.entrySet().stream()
                 .flatMap(entry -> entry.getValue().stream().map(TermFrequency.TermFreqRecord::getDocumentURI))
                 .distinct().count();
+
+        this.tfidfComputer = new Log10TFIDF(totalDocumentCount);
 
         log = context.getLogger();
         log.log(Level.INFO, "Initialized TFIDFAE.");
@@ -72,33 +76,22 @@ public class TFIDFAE extends CasAnnotator_ImplBase {
         log.log(Level.INFO, "Starting processing of TFIDFAE.");
         final Map<String, Double> tfidfs = new HashMap<>();
         final FSIndex<AnnotationFS> termIndex = aCAS.getAnnotationIndex(termFrequencyType);
-        termIndex.forEach(term -> putTFIDF(term, aCAS, tfidfs));
+        termIndex.forEach(term -> computeTFIDF(term, tfidfs));
         final FSIndex<AnnotationFS> tokenIndex = aCAS.getAnnotationIndex(tokenType);
-        tokenIndex.forEach(token -> setTFIDF(tfidfs, token));
+        tokenIndex.forEach(token -> setTFIDFFeature(tfidfs, token));
     }
 
-    private void setTFIDF(Map<String, Double> tfidfs, AnnotationFS token) {
+    private void setTFIDFFeature(Map<String, Double> tfidfs, AnnotationFS token) {
         final Double tfidf = tfidfs.getOrDefault(token.getCoveredText(), 0d);
         token.setDoubleValue(tfidfFeature, tfidf);
     }
 
-    private void putTFIDF(final AnnotationFS term, final CAS aCAS, final Map<String, Double> tfidfs) {
-        final int frequency = term.getIntValue(termFrequencyFeature);
+    private void computeTFIDF(final AnnotationFS term, final Map<String, Double> tfidfs) {
         final String surface = term.getStringValue(termSurfaceFeature);
-        final Double tfidf = computeTFIDF(frequency, docFreqOf(surface));
-        if (tfidf < 0) {
-            log.log(Level.WARNING, "Negative TFIDF for " + surface + ": " + tfidf);
-        }
+        final int termFrequency = term.getIntValue(termFrequencyFeature);
+        final long documentFrequency = documentFrequencies.get(surface).orElse(new LinkedList<>()).stream().count();
+        final Double tfidf = tfidfComputer.computeTFIDF(termFrequency, documentFrequency);
         tfidfs.put(surface, tfidf);
-    }
-
-    private Double computeTFIDF(int termFrequency, long documentFrequency) {
-        final double idf = Math.log10((double)totalDocumentCount / (double)documentFrequency);
-        return (double)termFrequency * idf;
-    }
-
-    private long docFreqOf(final String t) {
-        return documentFrequencies.get(t).orElse(new LinkedList<>()).stream().count();
     }
 
     @Override
