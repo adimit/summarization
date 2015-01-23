@@ -5,12 +5,8 @@ package dimitrov.sum.uima;
  */
 public class Log10TFIDF extends TFIDFComputer{
 
-    public Log10TFIDF(long totalDocumentCount) {
-        super(totalDocumentCount);
-    }
+    public Log10TFIDF(long totalDocumentCount) { super(totalDocumentCount); }
 
     @Override
-    public double computeTFIDF(int tf, long df) {
-        return (double) tf * Math.log10((double) df/this.totalDocumentCount);
-    }
+    public double computeTFIDF(int tf, long df) { return tf * Math.log10(idf(df)); }
 }

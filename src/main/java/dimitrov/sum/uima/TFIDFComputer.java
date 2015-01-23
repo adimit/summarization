@@ -10,5 +10,7 @@ public abstract class TFIDFComputer {
         this.totalDocumentCount = (double) totalDocumentCount;
     }
 
+    protected double idf(long df) { return totalDocumentCount / (double) df; }
+
     public abstract double computeTFIDF(int tf, long df);
 }
