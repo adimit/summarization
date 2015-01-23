@@ -17,9 +17,7 @@ import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by aleks on 20/01/15.
@@ -82,14 +80,28 @@ public class TFIDFAE extends CasAnnotator_ImplBase {
     }
 
     private void setTFIDFFeature(Map<String, Double> tfidfs, AnnotationFS token) {
-        final Double tfidf = tfidfs.getOrDefault(token.getCoveredText(), 0d);
-        token.setDoubleValue(tfidfFeature, tfidf);
+        final Double tfidf = tfidfs.get(token.getCoveredText());
+        if (tfidf == null) {
+            log.log(Level.SEVERE, "Could not get tfidf for token: " + token.getCoveredText());
+            // setting it to one: if it's not in the doc collection, it has to be at least a little special.
+            token.setDoubleValue(tfidfFeature, 1d);
+        } else {
+            token.setDoubleValue(tfidfFeature, tfidf);
+            if (log.isLoggable(Level.FINE)) {
+                log.log(Level.FINE, "tfidf for "+token.getCoveredText()+" is "+tfidf+".");
+            }
+        }
     }
 
     private void computeTFIDF(final AnnotationFS term, final Map<String, Double> tfidfs) {
         final String surface = term.getStringValue(termSurfaceFeature);
         final int termFrequency = term.getIntValue(termFrequencyFeature);
-        final long documentFrequency = documentFrequencies.get(surface).orElse(new LinkedList<>()).stream().count();
+        final Optional<List<TermFrequency.TermFreqRecord>> termFreqRecords = documentFrequencies.get(surface);
+        final long documentFrequency;
+        if (termFreqRecords.isPresent())
+            documentFrequency = termFreqRecords.get().size();
+        else
+            documentFrequency = 0;
         final Double tfidf = tfidfComputer.computeTFIDF(termFrequency, documentFrequency);
         tfidfs.put(surface, tfidf);
     }
