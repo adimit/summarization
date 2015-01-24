@@ -111,6 +111,7 @@ public class Summarizer {
         SLF4JBridgeHandler.install();
 
         log.info("Initializing.");
+        final long startTime = System.currentTimeMillis();
         final Arguments arguments = new Arguments(args);
 
         final URLStreamHandler internalHandler = new ClassPathHandler();
@@ -216,6 +217,8 @@ public class Summarizer {
             brokerService.stop();
         }
 
+        final long finalTime = System.currentTimeMillis();
+        log.info("Overall processing time was {}", UimaDeployer.renderMillis(finalTime - startTime));
         log.info("Completed.");
     }
 
