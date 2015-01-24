@@ -2,7 +2,6 @@
 module Main where
 
 import Data.Maybe (mapMaybe)
-import Control.Applicative ((<$>),(<*>), pure)
 import System.Directory (getDirectoryContents, doesFileExist, doesDirectoryExist)
 import qualified Data.Map.Lazy as M
 import Data.List (foldl')
@@ -35,10 +34,11 @@ scoreDocument n collectionFreqs docFreqs documentContent filePath = Document fil
   where terms = mapMaybe (uncurry $ computeTFIDF n collectionFreqs) . M.toList $ docFreqs
 
 computeTFIDF :: Int -> TermFrequencies -> String -> Int -> Maybe Term
-computeTFIDF n collectionFreqs term termfreq = Term <$> pure term <*>
-                                               ((*) <$> pure (fromIntegral termfreq) <*> (logBase 10 <$> idf))
-  where df = M.lookup term collectionFreqs
-        idf = (/) <$> pure (fromIntegral n) <*> (fromIntegral <$> df)
+computeTFIDF n collectionFreqs term termfreq = do
+  df <- M.lookup term collectionFreqs
+  let idf = fromIntegral n / fromIntegral df
+      tfidf = fromIntegral termfreq * logBase 10 idf
+  return $ Term term tfidf
 
 getFileOrDirectoryRecursively :: FilePath -> IO [FilePath]
 getFileOrDirectoryRecursively fp = do
