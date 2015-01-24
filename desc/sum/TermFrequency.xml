@@ -92,7 +92,7 @@
         </capabilities>
         <operationalProperties>
             <modifiesCas>true</modifiesCas>
-            <multipleDeploymentAllowed>true</multipleDeploymentAllowed>
+            <multipleDeploymentAllowed>false</multipleDeploymentAllowed>
         </operationalProperties>
     </analysisEngineMetaData>
 </analysisEngineDescription>

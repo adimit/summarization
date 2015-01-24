@@ -11,6 +11,7 @@ import org.apache.uima.analysis_component.CasAnnotator_ImplBase;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.cas.*;
 import org.apache.uima.cas.text.AnnotationFS;
+import org.apache.uima.resource.ResourceConfigurationException;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
@@ -34,17 +35,28 @@ public class TermFrequency extends CasAnnotator_ImplBase {
     private Feature termSurfaceFeature;
     private Feature termObservationsFeature;
 
-    private static boolean done = false;
-    private static TermFrequencies<String,TermFreqRecord> documentFrequencies;
+    private TermFrequencies<String,TermFreqRecord> documentFrequencies;
 
 
     @Override
     public void initialize(UimaContext context) throws ResourceInitializationException {
+        super.initialize(context);
         this.log = context.getLogger();
         log.log(Level.INFO, "Initializing Term Frequency AE.");
-        super.initialize(context);
         this.context = context;
         documentFrequencies = new TermFrequencies<>();
+    }
+
+    /**
+     * Notifies this AnalysisComponent that its configuration parameters have changed. This
+     * implementation just calls {@link #destroy()} followed by {@link #initialize(org.apache.uima.UimaContext)}. Subclasses can
+     * override to provide more efficient reconfiguration logic if necessary.
+     *
+     * @see org.apache.uima.analysis_component.AnalysisComponent#reconfigure()
+     */
+    @Override
+    public void reconfigure() throws ResourceConfigurationException, ResourceInitializationException {
+        log.log(Level.WARNING, "Reconfiguring Term Frequency AE. There is nothing to reconfigure.");
     }
 
     /**
@@ -65,13 +77,6 @@ public class TermFrequency extends CasAnnotator_ImplBase {
                 recordObservationInCas(aCAS, observation.getKey(), observation.getValue(),
                         sourceInfo.getUri().toASCIIString()));
         log.log(Level.INFO, "Finished Term Frequency annotation.");
-    }
-
-    public static TermFrequencies<String, TermFreqRecord> getCollectionFreqs() {
-        if (done)
-            return documentFrequencies;
-        else
-            return null;
     }
 
     private void recordObservationInCas(final CAS aCAS, final String term,
@@ -110,7 +115,6 @@ public class TermFrequency extends CasAnnotator_ImplBase {
 
     @Override
     public void collectionProcessComplete() throws AnalysisEngineProcessException {
-        done = true;
         log.log(Level.INFO, "COLLECTION PROCESS COMPLETE.");
         final Collection<Map.Entry<String,List<TermFreqRecord>>> docFreqs = documentFrequencies.entrySet();
         final int totalNumberOfTerms = docFreqs.size();
