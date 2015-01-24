@@ -39,7 +39,7 @@ public class Summarizer {
 
     public static final String termFrequencySerializationFile = "tf.serialized";
 
-    private static final Logger log = LoggerFactory.getLogger(UimaDeployer.class);
+    private static final Logger log = LoggerFactory.getLogger(Summarizer.class);
 
     public static final String SETTINGS_FILE = "Settings.properties";
 
