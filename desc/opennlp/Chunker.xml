@@ -48,20 +48,20 @@
 				<multiValued>false</multiValued>
 				<mandatory>true</mandatory>
 			</configurationParameter>
-			
+
 			<configurationParameter>
 				<name>opennlp.uima.ChunkType</name>
 				<type>String</type>
 				<multiValued>false</multiValued>
 				<mandatory>true</mandatory>
 			</configurationParameter>
-	
+
 			<configurationParameter>
 				<name>opennlp.uima.ChunkTagFeature</name>
 				<type>String</type>
 				<multiValued>false</multiValued>
 				<mandatory>true</mandatory>
-			</configurationParameter>			
+			</configurationParameter>
 		</configurationParameters>
 		<configurationParameterSettings>
 
@@ -85,14 +85,14 @@
 					<string>pos</string>
 				</value>
 			</nameValuePair>
-			
+
 			<nameValuePair>
 				<name>opennlp.uima.ChunkType</name>
 				<value>
 					<string>opennlp.uima.Chunk</string>
 				</value>
 			</nameValuePair>
-			
+
 			<nameValuePair>
 				<name>opennlp.uima.ChunkTagFeature</name>
 				<value>
@@ -103,10 +103,10 @@
 
 		<typeSystemDescription>
 			<imports>
-				<import location="TypeSystem.xml"/>
+				<import location="internal:opennlp/TypeSystem.xml"/>
 			</imports>
 		</typeSystemDescription>
-		
+
 		<typePriorities/>
     <fsIndexCollection/>
     <capabilities>
@@ -124,7 +124,7 @@
       <outputsNewCASes>false</outputsNewCASes>
     </operationalProperties>
   </analysisEngineMetaData>
-	
+
 	<externalResourceDependencies>
 		<externalResourceDependency>
 			<key>opennlp.uima.ModelName</key>
@@ -133,6 +133,6 @@
 		<optional>false</optional>
     </externalResourceDependency>
 	</externalResourceDependencies>
-	
+
 	<resourceManagerConfiguration/>
 </analysisEngineDescription>

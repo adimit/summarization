@@ -113,7 +113,7 @@
 		
 		<typeSystemDescription>
 			<imports>
-				<import location="TypeSystem.xml" />
+				<import location="internal:opennlp/TypeSystem.xml" />
 			</imports>
 		</typeSystemDescription>
 		
@@ -136,6 +136,7 @@
 		<externalResources>
 			<externalResource>
 				<name>ParserModel</name>
+				<description/>
 				<fileResourceSpecifier>
 					<fileUrl>file:en-parser-chunking.bin</fileUrl>
 				</fileResourceSpecifier>

@@ -125,6 +125,9 @@ public class Summarizer {
         final List<String> phase1Components = new LinkedList<>();
         phase1Components.add("internal:opennlp/SentenceDetector.xml");
         phase1Components.add("internal:opennlp/Tokenizer.xml");
+        phase1Components.add("internal:opennlp/PosTagger.xml");
+        phase1Components.add("internal:opennlp/Chunker.xml");
+        phase1Components.add("internal:opennlp/Parser.xml");
         phase1Components.add("internal:sum/TermFrequency.xml");
 
         final ResourceManagerConfiguration rmConfig = new ResourceManagerConfiguration_impl();
@@ -140,6 +143,27 @@ public class Summarizer {
                 "TokenModel",
                 "internal:models/en-token.bin",
                 "Tokenizer",
+                rmConfig
+        );
+        configureOpenNLPResource(
+                "opennlp.uima.postag.POSModelResourceImpl",
+                "PosModel",
+                "internal:models/en-pos-maxent.bin",
+                "POS Tagger",
+                rmConfig
+        );
+        configureOpenNLPResource(
+                "opennlp.uima.chunker.ChunkerModelResourceImpl",
+                "ChunkerModel",
+                "internal:models/en-chunker.bin",
+                "Chunker",
+                rmConfig
+        );
+        configureOpenNLPResource(
+                "opennlp.uima.parser.ParserModelResourceImpl",
+                "ParserModel",
+                "internal:models/en-parser-chunking.bin",
+                "Parser",
                 rmConfig
         );
 

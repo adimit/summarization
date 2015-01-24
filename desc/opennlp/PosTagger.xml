@@ -25,7 +25,7 @@
 	<annotatorImplementationName>opennlp.uima.postag.POSTagger</annotatorImplementationName>
 	<analysisEngineMetaData>
 		<name>POS Tagger</name>
-		<description></description>
+		<description/>
 		<version>${pom.version}</version>
 		<vendor>Apache Software Foundation</vendor>
 		<configurationParameters>
@@ -77,7 +77,7 @@
 
 		<typeSystemDescription>
 			<imports>
-				<import location="TypeSystem.xml" />
+				<import location="internal:opennlp/TypeSystem.xml" />
 			</imports>
 		</typeSystemDescription>
 		
@@ -95,6 +95,7 @@
 	<externalResourceDependencies>
 		<externalResourceDependency>
 			<key>opennlp.uima.ModelName</key>
+			<description/>
 			<interfaceName>opennlp.uima.postag.POSModelResource</interfaceName>
 		</externalResourceDependency>
 	</externalResourceDependencies>
