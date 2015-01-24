@@ -48,7 +48,7 @@ getFileOrDirectoryRecursively fp = do
     else do
     isDirectory <- doesDirectoryExist fp
     if isDirectory
-      then liftM (filter (`elem` [".", ".."])) (getDirectoryContents fp)
+      then liftM (filter (not . (`elem` [".", ".."]))) (getDirectoryContents fp)
            >>= fmap concat . mapM (getFileOrDirectoryRecursively . (fp </>))
       else return []
 
