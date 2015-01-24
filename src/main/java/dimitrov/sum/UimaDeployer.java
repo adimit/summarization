@@ -41,7 +41,7 @@ public class UimaDeployer implements Runnable {
      */
     private static long mStartTime = System.currentTimeMillis();
 
-    private final File aeDescriptor;
+    private final File deploymentDescriptor;
 
     // For logging CAS activity
     private ConcurrentHashMap<String, Long> casMap = new ConcurrentHashMap<>();
@@ -49,11 +49,11 @@ public class UimaDeployer implements Runnable {
     private String springContainerId = null;
     private UimaAsynchronousEngine uimaAsynchronousEngine;
 
-    private void writeDeploymentDescriptor(final DeployerSettings settings, final File tempFile,
+    private void writeDeploymentDescriptor(final File aggregateAE, final DeployerSettings settings, final File tempFile,
                                            final String name, final String description)
             throws ResourceInitializationException {
         final ServiceContext context = new ServiceContextImpl(name, description,
-                settings.aggregateAE, settings.endpointName, settings.brokerUrl);
+                aggregateAE.getAbsolutePath(), settings.endpointName, settings.brokerUrl);
         context.setCasPoolSize(settings.uimaCasPoolSize);
         context.setScaleup(settings.uimaCasPoolSize);
 
@@ -76,9 +76,9 @@ public class UimaDeployer implements Runnable {
         }
     }
 
-    public UimaDeployer(final DeployerSettings settings) throws Exception {
-        aeDescriptor = new File(settings.phase + ".xml");
-        writeDeploymentDescriptor(settings, aeDescriptor, settings.phase, settings.phase + " deployment.");
+    public UimaDeployer(final DeployerSettings settings, final File aggregateDescriptor) throws Exception {
+        deploymentDescriptor = new File(settings.phase + ".xml");
+        writeDeploymentDescriptor(aggregateDescriptor, settings, deploymentDescriptor, settings.phase, settings.phase + " deployment.");
 
         uimaAsynchronousEngine = new BaseUIMAAsynchronousEngine_impl();
 
@@ -106,7 +106,7 @@ public class UimaDeployer implements Runnable {
 
         log.info("Deploying {} AE.", settings.phase);
         final long deployStart = System.currentTimeMillis();
-        springContainerId = uimaAsynchronousEngine.deploy(aeDescriptor.getAbsolutePath(), appCtx);
+        springContainerId = uimaAsynchronousEngine.deploy(deploymentDescriptor.getAbsolutePath(), appCtx);
         final long deployEnd = System.currentTimeMillis();
         log.info("Deployment took {}.", renderMillis(deployEnd - deployStart));
 
@@ -129,8 +129,8 @@ public class UimaDeployer implements Runnable {
             uimaAsynchronousEngine.undeploy(springContainerId);
             log.info("Stopping…");
             uimaAsynchronousEngine.stop();
-            if (!aeDescriptor.delete())
-                log.warn("Couldn't delete phase 1 descriptor at {}!", aeDescriptor.getAbsoluteFile());
+            if (!deploymentDescriptor.delete())
+                log.warn("Couldn't delete phase 1 descriptor at {}!", deploymentDescriptor.getAbsoluteFile());
             log.info("Halted.");
         } catch (Exception e) {
             Summarizer.croak(e, "Failed asynchronous processing!");

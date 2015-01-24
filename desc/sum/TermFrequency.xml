@@ -74,7 +74,7 @@
         </configurationParameterSettings>
         <typeSystemDescription>
             <imports>
-                <import location="../opennlp/TypeSystem.xml" />
+                <import location="internal:opennlp/TypeSystem.xml" />
             </imports>
         </typeSystemDescription>
         <capabilities>

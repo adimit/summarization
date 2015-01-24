@@ -67,7 +67,7 @@
 		
 		<typeSystemDescription>
 			<imports>
-				<import location="TypeSystem.xml" />
+				<import location="internal:opennlp/TypeSystem.xml" />
 			</imports>
 		</typeSystemDescription>
 		
