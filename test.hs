@@ -58,12 +58,7 @@ main = do
   fileContents <- mapM readFile files
   let n = length files
       documentFreqs = map (foldl' (\m word -> M.insertWith (+) word 1 m) M.empty . tokenize) fileContents
-      collectionFreqs = foldl' (M.unionWith (+)) M.empty documentFreqs
-      collectionFreqs' = foldl' (\colFreqs docFreqs -> foldl' (\cf srf -> M.insertWith (+) srf 1 cf) colFreqs (map fst . M.toList $ docFreqs)) M.empty documentFreqs
-      documentScorer = scoreDocument n collectionFreqs'
+      collectionFreqs = foldl' (\colFreqs term -> M.insertWith (+) term 1 colFreqs) M.empty . map fst $ concatMap M.toList documentFreqs
+      documentScorer = scoreDocument n collectionFreqs
       scoredDocuments = zipWith3 documentScorer documentFreqs fileContents files
-      totalObs = sum . map snd $ M.toList collectionFreqs
-  print collectionFreqs'
-  putStrLn $ "Total terms: " ++ show (M.size collectionFreqs)
-        ++ ", total obs: " ++ show totalObs
   mapM_ print scoredDocuments
