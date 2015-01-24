@@ -115,7 +115,7 @@ public class UimaDeployer implements Runnable {
         appCtx.put(UimaAsynchronousEngine.ServerUri, settings.brokerUrl);
         appCtx.put(UimaAsynchronousEngine.ENDPOINT, settings.endpointName);
 
-        appCtx.put(UIMAFramework.CAS_INITIAL_HEAP_SIZE, Integer.valueOf(settings.fsHeapSize).toString());
+        appCtx.put(UIMAFramework.CAS_INITIAL_HEAP_SIZE, Integer.toString(settings.fsHeapSize));
 
         log.info("Initializing UIMA As.");
         uimaAsynchronousEngine.initialize(appCtx);
