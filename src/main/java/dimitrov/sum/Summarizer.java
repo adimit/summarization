@@ -3,12 +3,20 @@ package dimitrov.sum;
 import dimitrov.sum.protocols.classpath.ClassPathHandler;
 import dimitrov.sum.protocols.classpath.ConfigurableStreamHandlerFactory;
 import dimitrov.sum.uima.LocalSourceInfo;
+import dimitrov.sum.uima.Names;
+import dimitrov.sum.uima.ae.TFIDFAE;
+import dimitrov.sum.uima.ae.WordNet;
+import dimitrov.sum.uima.ae.WordNetModelResource;
+import opennlp.uima.util.UimaUtil;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.analysis_engine.AnalysisEngineDescription;
 import org.apache.uima.analysis_engine.metadata.FixedFlow;
 import org.apache.uima.analysis_engine.metadata.impl.FixedFlow_impl;
 import org.apache.uima.fit.factory.AggregateBuilder;
+import org.apache.uima.fit.factory.AnalysisEngineFactory;
+import org.apache.uima.fit.factory.ExternalResourceFactory;
+import org.apache.uima.fit.factory.TypeSystemDescriptionFactory;
 import org.apache.uima.resource.ExternalResourceDescription;
 import org.apache.uima.resource.FileResourceSpecifier;
 import org.apache.uima.resource.ResourceInitializationException;
@@ -16,6 +24,7 @@ import org.apache.uima.resource.impl.ExternalResourceDescription_impl;
 import org.apache.uima.resource.impl.FileResourceSpecifier_impl;
 import org.apache.uima.resource.metadata.ExternalResourceBinding;
 import org.apache.uima.resource.metadata.ResourceManagerConfiguration;
+import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.apache.uima.resource.metadata.impl.ExternalResourceBinding_impl;
 import org.apache.uima.resource.metadata.impl.ResourceManagerConfiguration_impl;
 import org.apache.uima.util.InvalidXMLException;
@@ -171,10 +180,23 @@ public class Summarizer {
         final AnalysisEngineDescription phase1AEDesc = makeAggregate("Phase1", phase1Components, rmConfig);
         final File phase1Xml = writeDescriptor(phase1AEDesc, "phase1");
 
-        final List<String> phase2Components = new LinkedList<>();
-        phase2Components.add("internal:sum/TFIDFAE.xml");
+        final URL dictionaryURL = new URL("internal:extjwnl_resource_properties.xml");
+        final ExternalResourceDescription wnModel = ExternalResourceFactory.createExternalResourceDescription
+                (WordNetModelResource.class, dictionaryURL);
 
-        final AnalysisEngineDescription phase2AEDesc = makeAggregate("Phase2", phase2Components);
+        final List<AnalysisEngineDescription> phase2AEs = new LinkedList<>();
+        final TypeSystemDescription opennlpTypeSystem = TypeSystemDescriptionFactory.createTypeSystemDescriptionFromPath("internal:opennlp/TypeSystem.xml");
+        phase2AEs.add(AnalysisEngineFactory.createEngineDescription(TFIDFAE.class, opennlpTypeSystem,
+                UimaUtil.TOKEN_TYPE_PARAMETER, "opennlp.uima.Token",
+                Names.TERM_TYPE_PARAMETER, "dimitrov.sum.Term",
+                Names.TFIDF_FEATURE_PARAMETER, "tfidf",
+                Names.TERM_SURFACE_FEATURE_PARAMETER, "surface",
+                Names.TERM_FREQUENCY_FEATURE_PARAMETER, "casFrequency",
+                Names.TERM_OBSERVATIONS_FEATURE_PARAMETER, "observations"));
+        phase2AEs.add(AnalysisEngineFactory.createEngineDescription(WordNet.class, opennlpTypeSystem,
+                WordNet.WORD_NET_RESOURCE_KEY, wnModel));
+
+        final AnalysisEngineDescription phase2AEDesc = makeAggregatePrime("Phase2", phase2AEs);
         final File phase2Xml = writeDescriptor(phase2AEDesc, "phase2");
 
         final Properties properties = new Properties();
@@ -238,7 +260,7 @@ public class Summarizer {
         try {
             xmlin = new XMLInputSource(location);
         } catch (IOException e) {
-            log.error("IO error while reading XML Input from {}.", location.toString(), e);
+            log.error("IO error while reading XML input from {}.", location.toString(), e);
             throw new ResourceInitializationException(e);
         }
         final AnalysisEngineDescription ae;
@@ -251,23 +273,13 @@ public class Summarizer {
         return ae;
     }
 
-    private static AnalysisEngineDescription makeAggregate(String name, List<String> locations)
-            throws ResourceInitializationException {
-
-        final ResourceManagerConfiguration emptyConfiguration = new  ResourceManagerConfiguration_impl();
-        return makeAggregate(name, locations, emptyConfiguration);
-    }
-
-    private static AnalysisEngineDescription makeAggregate
-            (String name, List<String> locations,
-             ResourceManagerConfiguration resourceManagerConfiguration)
+    private static AnalysisEngineDescription makeAggregatePrime
+            (String name, final List<AnalysisEngineDescription> aes,
+             final ResourceManagerConfiguration resourceManagerConfiguration)
             throws ResourceInitializationException {
 
         final AggregateBuilder builder = new AggregateBuilder();
-        for (String location: locations) {
-            final AnalysisEngineDescription aeDesc = readXMLAEDesc(location);
-            builder.add(aeDesc);
-        }
+        aes.forEach(ae -> builder.add(ae));
 
         final AnalysisEngineDescription aggregate = builder.createAggregateDescription();
         aggregate.getAnalysisEngineMetaData().setName(name);
@@ -283,9 +295,35 @@ public class Summarizer {
         fixed.setFixedFlow(keyStrings);
         aggregate.getAnalysisEngineMetaData().setFlowConstraints(fixed);
 
-        aggregate.setResourceManagerConfiguration(resourceManagerConfiguration);
+        if (resourceManagerConfiguration != null)
+            aggregate.setResourceManagerConfiguration(resourceManagerConfiguration);
 
         return aggregate;
+    }
+
+    private static AnalysisEngineDescription makeAggregatePrime
+            (String name, final List<AnalysisEngineDescription> aes)
+            throws ResourceInitializationException {
+
+        return makeAggregatePrime(name, aes, null);
+    }
+
+    private static AnalysisEngineDescription makeAggregate(String name, final List<String> locations)
+            throws ResourceInitializationException {
+
+        final ResourceManagerConfiguration emptyConfiguration = new  ResourceManagerConfiguration_impl();
+        return makeAggregate(name, locations, emptyConfiguration);
+    }
+
+    private static AnalysisEngineDescription makeAggregate
+            (String name, final List<String> locations,
+             final ResourceManagerConfiguration resourceManagerConfiguration)
+            throws ResourceInitializationException {
+
+        final List<AnalysisEngineDescription> aes = new LinkedList<>();
+        for (String location: locations) { aes.add(readXMLAEDesc(location)); }
+
+        return makeAggregatePrime(name, aes, resourceManagerConfiguration);
     }
 
     private static class Arguments {
