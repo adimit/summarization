@@ -111,7 +111,7 @@ public class TFIDFAE extends CasAnnotator_ImplBase {
         log.log(Level.INFO, "Initializing type system.");
         tokenType = AnnotatorUtil.getRequiredTypeParameter(this.context, typeSystem, UimaUtil.TOKEN_TYPE_PARAMETER);
         termFrequencyType = AnnotatorUtil.getRequiredTypeParameter
-                (this.context, typeSystem, Names.TERM_FREQUENCY_TYPE_PARAMETER);
+                (this.context, typeSystem, Names.TERM_TYPE_PARAMETER);
         termFrequencyFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
                 Names.TERM_FREQUENCY_FEATURE_PARAMETER, CAS.TYPE_NAME_INTEGER);
         termSurfaceFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
