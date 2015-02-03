@@ -112,7 +112,6 @@ public class Summarizer {
         modelBinding.setKey(externalResourceKey + "/opennlp.uima.ModelName");
         modelBinding.setResourceName(resourceName);
         rmConfig.addExternalResourceBinding(modelBinding);
-
     }
 
     public static void main(String[] args) throws Exception {
