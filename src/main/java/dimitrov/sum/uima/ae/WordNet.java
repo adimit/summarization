@@ -15,6 +15,7 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -58,12 +59,14 @@ public class WordNet extends JCasAnnotator_ImplBase{
                     words = new String[]{ token.getCoveredText() };
                 } else {
                     // We don't do word sense disambiguation. Just concatenate the synsets. Yup, that's bad.
-                    words = senses.stream()
-                            .map(Synset::getWords).flatMap(List::stream)
-                            .map(Word::getLemma).toArray(String[]::new);
                     if (log.isDebugEnabled() && senses.size() > 1) {
                         log.warn("Token '{}' has more than one sense. WSD NYI!", token.getCoveredText());
                     }
+
+                    List<String> bigSynset = new LinkedList<String>();
+                    senses.forEach(synset -> synset.getWords().forEach(word -> bigSynset.add(word.getLemma())));
+                    words = new String[bigSynset.size()];
+                    bigSynset.toArray(words);
                     log.debug("Synset for '{}': {}.", token.getCoveredText(), words);
                 }
                 final StringArray stringArray = new StringArray(aJCas, words.length);
