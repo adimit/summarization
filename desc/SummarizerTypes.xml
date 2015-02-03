@@ -25,6 +25,11 @@
                     <description>term frequency * inverse document frequency</description>
                     <rangeTypeName>uima.cas.Double</rangeTypeName>
                 </featureDescription>
+                <featureDescription>
+                    <name>synset</name>
+                    <description>Set of WordNet synonyms.</description>
+                    <rangeTypeName>uima.cas.StringArray</rangeTypeName>
+                </featureDescription>
             </features>
         </typeDescription>
         <typeDescription>
