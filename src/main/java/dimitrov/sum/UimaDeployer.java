@@ -1,7 +1,8 @@
 package dimitrov.sum;
 
+import dimitrov.sum.uima.SummarizerUtil;
 import dimitrov.sum.uima.reader.DocumentReader;
-import dimitrov.sum.uima.LocalSourceInfo;
+import dimitrov.sum.uima.types.SourceDocumentInformation;
 import org.apache.commons.io.FileUtils;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.aae.client.UimaASProcessStatus;
@@ -94,6 +95,7 @@ public class UimaDeployer implements Runnable {
                 DocumentReader.class,
                 settings.getTypeSystemDesc(),
                 DocumentReader.PARAM_INPUTDIR, settings.inputDir,
+                DocumentReader.PARAM_OUTPUTDIR, settings.outputDir,
                 DocumentReader.PARAM_READ_PLAIN_TEXT, settings.readPlainText);
 
         final CollectionReader collectionReader = UIMAFramework.produceCollectionReader(cd);
@@ -256,14 +258,28 @@ public class UimaDeployer implements Runnable {
                 }
             }
 
-            final LocalSourceInfo sourceInfo = new LocalSourceInfo(aCas);
-            final File outFile = new File(outputDir, sourceInfo.generateXmiFileName());
-            log.debug("Finished annotation of {}. Outputting to {}", sourceInfo.getUri(), outFile.getName());
-            try (FileOutputStream outStream = new FileOutputStream(outFile)) {
+            try {
+                final SourceDocumentInformation sourceInfo =
+                        SummarizerUtil.getJCasSourceDocumentInformation(aCas.getJCas());
+                final File outFile = new File(sourceInfo.getOutputTarget());
+                log.debug("Finished annotation of {}. Outputting to {}", sourceInfo.getUri(), outFile.getName());
+                final File parentDirectory = outFile.getParentFile();
+
+                // Damned if won't make use of the only syntactic lazy evaluation in Java.
+                // outfile.mkdirs() is executed & evaluated iff parentDirectory.exists() == false
+                if (parentDirectory != null && !parentDirectory.exists() && !parentDirectory.mkdirs()) {
+                    throw new RuntimeException("Couldn't create parent directories for " + outFile.getAbsolutePath());
+                }
+
+                try (FileOutputStream outStream = new FileOutputStream(outFile)) {
                     XmiCasSerializer.serialize(aCas, outStream);
-            } catch (Exception e) {
-                log.error("Could not save CAS to XMI file");
-                e.printStackTrace();
+                } catch (Exception e) {
+                    log.error("Could not save CAS to XMI file");
+                    e.printStackTrace();
+                }
+            } catch (CASException e) {
+                log.error("Error getting JCas from CAS. Something's amiss.");
+                throw new RuntimeException("Error getting JCas from CAS.", e);
             }
 
             // update stats

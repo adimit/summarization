@@ -94,9 +94,13 @@
                 </featureDescription>
                 <featureDescription>
                     <name>documentSize</name>
-                    <description>Size of original document in bytes before processing by CAS Initializer.
-                        Either absolute file size of size within file or other source.</description>
+                    <description>Size of original document in bytes before processing by CAS Initializer.</description>
                     <rangeTypeName>uima.cas.Long</rangeTypeName>
+                </featureDescription>
+                <featureDescription>
+                    <name>outputTarget</name>
+                    <description>The file name of the target output file.</description>
+                    <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
             </features>
         </typeDescription>

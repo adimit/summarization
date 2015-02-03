@@ -2,8 +2,7 @@ package dimitrov.sum;
 
 import dimitrov.sum.protocols.classpath.ClassPathHandler;
 import dimitrov.sum.protocols.classpath.ConfigurableStreamHandlerFactory;
-import dimitrov.sum.uima.LocalSourceInfo;
-import dimitrov.sum.uima.Names;
+import dimitrov.sum.uima.SummarizerUtil;
 import dimitrov.sum.uima.ae.TFIDFAE;
 import dimitrov.sum.uima.ae.WordNet;
 import dimitrov.sum.uima.ae.WordNetModelResource;
@@ -16,7 +15,6 @@ import org.apache.uima.analysis_engine.metadata.impl.FixedFlow_impl;
 import org.apache.uima.fit.factory.AggregateBuilder;
 import org.apache.uima.fit.factory.AnalysisEngineFactory;
 import org.apache.uima.fit.factory.ExternalResourceFactory;
-import org.apache.uima.fit.factory.TypeSystemDescriptionFactory;
 import org.apache.uima.resource.ExternalResourceDescription;
 import org.apache.uima.resource.FileResourceSpecifier;
 import org.apache.uima.resource.ResourceInitializationException;
@@ -24,7 +22,6 @@ import org.apache.uima.resource.impl.ExternalResourceDescription_impl;
 import org.apache.uima.resource.impl.FileResourceSpecifier_impl;
 import org.apache.uima.resource.metadata.ExternalResourceBinding;
 import org.apache.uima.resource.metadata.ResourceManagerConfiguration;
-import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.apache.uima.resource.metadata.impl.ExternalResourceBinding_impl;
 import org.apache.uima.resource.metadata.impl.ResourceManagerConfiguration_impl;
 import org.apache.uima.util.InvalidXMLException;
@@ -197,11 +194,11 @@ public class Summarizer {
         final List<AnalysisEngineDescription> phase2AEs = new LinkedList<>();
         phase2AEs.add(AnalysisEngineFactory.createEngineDescription(TFIDFAE.class, phase1Settings.getTypeSystemDesc(),
                 UimaUtil.TOKEN_TYPE_PARAMETER, "dimitrov.sum.uima.types.Token",
-                Names.TERM_TYPE_PARAMETER, "dimitrov.sum.uima.types.Term",
-                Names.TFIDF_FEATURE_PARAMETER, "tfidf",
-                Names.TERM_SURFACE_FEATURE_PARAMETER, "surface",
-                Names.TERM_FREQUENCY_FEATURE_PARAMETER, "casFrequency",
-                Names.TERM_OBSERVATIONS_FEATURE_PARAMETER, "observations"));
+                SummarizerUtil.TERM_TYPE_PARAMETER, "dimitrov.sum.uima.types.Term",
+                SummarizerUtil.TFIDF_FEATURE_PARAMETER, "tfidf",
+                SummarizerUtil.TERM_SURFACE_FEATURE_PARAMETER, "surface",
+                SummarizerUtil.TERM_FREQUENCY_FEATURE_PARAMETER, "casFrequency",
+                SummarizerUtil.TERM_OBSERVATIONS_FEATURE_PARAMETER, "observations"));
         phase2AEs.add(AnalysisEngineFactory.createEngineDescription(WordNet.class, phase1Settings.getTypeSystemDesc(),
                 WordNet.WORD_NET_RESOURCE_KEY, wnModel));
 
@@ -227,7 +224,6 @@ public class Summarizer {
             phase1.run();
         }
 
-        LocalSourceInfo.phaseComplete();
         final DeployerSettings phase2Settings = new DeployerSettings(properties, "phase2");
 
         final UimaDeployer phase2 = new UimaDeployer(phase2Settings, phase2Xml);

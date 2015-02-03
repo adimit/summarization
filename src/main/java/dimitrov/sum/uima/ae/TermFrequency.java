@@ -2,8 +2,8 @@ package dimitrov.sum.uima.ae;
 
 import dimitrov.sum.Summarizer;
 import dimitrov.sum.TermFrequencies;
-import dimitrov.sum.uima.LocalSourceInfo;
-import dimitrov.sum.uima.Names;
+import dimitrov.sum.uima.SummarizerUtil;
+import dimitrov.sum.uima.types.SourceDocumentInformation;
 import opennlp.uima.util.AnnotatorUtil;
 import opennlp.uima.util.UimaUtil;
 import org.apache.uima.UimaContext;
@@ -69,13 +69,19 @@ public class TermFrequency extends CasAnnotator_ImplBase {
     @Override
     public void process(CAS aCAS) throws AnalysisEngineProcessException {
         final TermFrequencies<String, AnnotationFS> tf = new TermFrequencies<>();
-        final LocalSourceInfo sourceInfo = new LocalSourceInfo(aCAS);
+        final SourceDocumentInformation sourceInfo;
+        try {
+            sourceInfo = SummarizerUtil.getJCasSourceDocumentInformation(aCAS.getJCas());
+        } catch (CASException e) {
+            log.log(Level.SEVERE, "Couldn't get JCas!");
+            throw new AnalysisEngineProcessException(e);
+        }
+
         log.log(Level.INFO, "Starting Term Frequency annotation.");
         final FSIndex<AnnotationFS> tokens = aCAS.getAnnotationIndex(tokenType);
         tokens.forEach(token -> tf.observe(token.getCoveredText(), token));
         tf.entrySet().forEach(observation ->
-                recordObservationInCas(aCAS, observation.getKey(), observation.getValue(),
-                        sourceInfo.getUri().toASCIIString()));
+                recordObservationInCas(aCAS, observation.getKey(), observation.getValue(), sourceInfo.getUri()));
         log.log(Level.INFO, "Finished Term Frequency annotation.");
     }
 
@@ -103,13 +109,13 @@ public class TermFrequency extends CasAnnotator_ImplBase {
         log.log(Level.INFO, "Initializing type system.");
         tokenType = AnnotatorUtil.getRequiredTypeParameter(this.context, typeSystem, UimaUtil.TOKEN_TYPE_PARAMETER);
         termFrequencyType = AnnotatorUtil.getRequiredTypeParameter
-                (this.context, typeSystem, Names.TERM_TYPE_PARAMETER);
+                (this.context, typeSystem, SummarizerUtil.TERM_TYPE_PARAMETER);
         termFrequencyFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
-                Names.TERM_FREQUENCY_FEATURE_PARAMETER, CAS.TYPE_NAME_INTEGER);
+                SummarizerUtil.TERM_FREQUENCY_FEATURE_PARAMETER, CAS.TYPE_NAME_INTEGER);
         termSurfaceFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
-                Names.TERM_SURFACE_FEATURE_PARAMETER, CAS.TYPE_NAME_STRING);
+                SummarizerUtil.TERM_SURFACE_FEATURE_PARAMETER, CAS.TYPE_NAME_STRING);
         termObservationsFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
-                Names.TERM_OBSERVATIONS_FEATURE_PARAMETER, CAS.TYPE_NAME_FS_ARRAY);
+                SummarizerUtil.TERM_OBSERVATIONS_FEATURE_PARAMETER, CAS.TYPE_NAME_FS_ARRAY);
         log.log(Level.INFO, "Finished initializing type system.");
     }
 

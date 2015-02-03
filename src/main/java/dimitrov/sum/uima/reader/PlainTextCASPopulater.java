@@ -15,12 +15,15 @@ import java.nio.charset.Charset;
  * Created by aleks on 20/01/15.
  */
 
-public class PlainTextCASPopulater implements CasPopulater {
+public class PlainTextCASPopulater extends CasPopulater {
     protected static final Logger log = LoggerFactory.getLogger(PlainTextCASPopulater.class);
 
     private final Charset encoding;
 
-    public PlainTextCASPopulater(final Charset encoding) {
+    public PlainTextCASPopulater(final Charset encoding,
+                                 final File inputDirectory,
+                                 final File outputDirectory) {
+        super(inputDirectory, outputDirectory);
         this.encoding = encoding;
     }
 
@@ -33,6 +36,7 @@ public class PlainTextCASPopulater implements CasPopulater {
         final SourceDocumentInformation srcInfo = new SourceDocumentInformation(cas);
         srcInfo.setUri(fromFile.getAbsoluteFile().toURI().toString());
         srcInfo.setDocumentSize(fromFile.length());
+        srcInfo.setOutputTarget(makeOutputPath(fromFile) + ".xmi");
         srcInfo.addToIndexes();
     }
 }
