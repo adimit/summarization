@@ -18,8 +18,6 @@ public class LocalSourceInfo {
 
     private URI uri;
     public final int documentSize;
-    public final int offsetInSource;
-    public final boolean documentIsFinal;
     public final boolean documentIsGeneric;
 
     private static int genericFileCounter = 1;
@@ -39,9 +37,7 @@ public class LocalSourceInfo {
             final FeatureStructure srcDocInfoFs = it.get();
 
             final Feature uriFeat = srcDocInfoType.getFeatureByBaseName("uri");
-            final Feature offsetInSourceFeat = srcDocInfoType.getFeatureByBaseName("offsetInSource");
             final Feature documentSizeFeat = srcDocInfoType.getFeatureByBaseName("documentSize");
-            final Feature lastSegmentFeat = srcDocInfoType.getFeatureByBaseName("lastSegment");
 
             final String uriString = srcDocInfoFs.getStringValue(uriFeat);
             try {
@@ -51,15 +47,11 @@ public class LocalSourceInfo {
                 log.error("Malformed URI in SourceDocInfo: {}", uriString);
             }
 
-            this.offsetInSource = srcDocInfoFs.getIntValue(offsetInSourceFeat);
             this.documentSize = srcDocInfoFs.getIntValue(documentSizeFeat);
-            this.documentIsFinal = srcDocInfoFs.getBooleanValue(lastSegmentFeat);
             this.documentIsGeneric = false;
         } else {
             this.uri = makeGenericURI();
             this.documentSize = 0;
-            this.offsetInSource = 0;
-            this.documentIsFinal = false;
             this.documentIsGeneric = true;
         }
     }
@@ -76,14 +68,11 @@ public class LocalSourceInfo {
 
     public URI getUri() { return this.uri; }
 
-    public String generateXmiFileName() {
-        return generateXmiFileName(this.uri, this.offsetInSource);
-    }
+    public String generateXmiFileName() { return generateXmiFileName(this.uri); }
 
-    public static String generateXmiFileName(final URI uri, final int offsetInSource) {
+    public static String generateXmiFileName(final URI uri) {
         final File temp = new File(uri.getPath());
-        final String offset = offsetInSource == 0 ? "" : "_" + offsetInSource;
-        String fName = temp.getName() + offset;
+        String fName = temp.getName();
         while (xmiNames.contains(fName)) {
             fName += "_";
             log.warn("Renaming because of name collision: {}", fName);

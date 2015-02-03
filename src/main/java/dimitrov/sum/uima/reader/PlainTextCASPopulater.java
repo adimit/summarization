@@ -32,22 +32,7 @@ public class PlainTextCASPopulater implements CasPopulater {
 
         final SourceDocumentInformation srcInfo = new SourceDocumentInformation(cas);
         srcInfo.setUri(fromFile.getAbsoluteFile().toURI().toString());
-        srcInfo.setOffsetInSource(0);
-
-        // We don't use lastSegment right now, maybe we should just get rid of it.
-        srcInfo.setLastSegment(false);
-
-        // good graces, I have *no* idea who was stupid enough to make
-        // documentSize an int, but we have to live with it.
-        final long fSize = fromFile.length();
-        if (fSize > Integer.MAX_VALUE) {
-            log.warn("File size of '{}' is larger than Integer.MAX_VALUE bytes. CAS document size unreliable!",
-                    fromFile.getAbsoluteFile().toString());
-            srcInfo.setDocumentSize(Integer.MAX_VALUE);
-        } else {
-            srcInfo.setDocumentSize((int) fromFile.length());
-        }
-
+        srcInfo.setDocumentSize(fromFile.length());
         srcInfo.addToIndexes();
     }
 }
