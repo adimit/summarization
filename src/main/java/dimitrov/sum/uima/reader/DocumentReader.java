@@ -82,7 +82,7 @@ public class DocumentReader extends JCasCollectionReader_ImplBase {
         totalFiles = files.size();
         progress = 0;
 
-        log.debug("Found {} files to process.", totalFiles);
+        log.debug("Found {} files to process in {}.", totalFiles, inputDirectory.getName());
     }
 
     @Override
