@@ -2,11 +2,9 @@ package dimitrov.sum;
 
 import dimitrov.sum.protocols.classpath.ClassPathHandler;
 import dimitrov.sum.protocols.classpath.ConfigurableStreamHandlerFactory;
-import dimitrov.sum.uima.SummarizerUtil;
 import dimitrov.sum.uima.ae.TFIDFAE;
 import dimitrov.sum.uima.ae.WordNet;
 import dimitrov.sum.uima.ae.WordNetModelResource;
-import opennlp.uima.util.UimaUtil;
 import org.apache.activemq.broker.BrokerService;
 import org.apache.uima.UIMAFramework;
 import org.apache.uima.analysis_engine.AnalysisEngineDescription;
@@ -192,15 +190,11 @@ public class Summarizer {
         final DeployerSettings phase1Settings = new DeployerSettings(properties, "phase1");
 
         final List<AnalysisEngineDescription> phase2AEs = new LinkedList<>();
-        phase2AEs.add(AnalysisEngineFactory.createEngineDescription(TFIDFAE.class, phase1Settings.getTypeSystemDesc(),
-                UimaUtil.TOKEN_TYPE_PARAMETER, "dimitrov.sum.uima.types.Token",
-                SummarizerUtil.TERM_TYPE_PARAMETER, "dimitrov.sum.uima.types.Term",
-                SummarizerUtil.TFIDF_FEATURE_PARAMETER, "tfidf",
-                SummarizerUtil.TERM_SURFACE_FEATURE_PARAMETER, "surface",
-                SummarizerUtil.TERM_FREQUENCY_FEATURE_PARAMETER, "casFrequency",
-                SummarizerUtil.TERM_OBSERVATIONS_FEATURE_PARAMETER, "observations"));
-        phase2AEs.add(AnalysisEngineFactory.createEngineDescription(WordNet.class, phase1Settings.getTypeSystemDesc(),
-                WordNet.WORD_NET_RESOURCE_KEY, wnModel));
+        phase2AEs.add(AnalysisEngineFactory.createEngineDescription
+                (TFIDFAE.class, phase1Settings.getTypeSystemDesc()));
+        phase2AEs.add(AnalysisEngineFactory.createEngineDescription
+                (WordNet.class, phase1Settings.getTypeSystemDesc(),
+                 WordNet.WORD_NET_RESOURCE_KEY, wnModel));
 
         final AnalysisEngineDescription phase2AEDesc = makeAggregatePrime("Phase2", phase2AEs);
         final File phase2Xml = writeDescriptor(phase2AEDesc, "phase2");

@@ -3,121 +3,97 @@ package dimitrov.sum.uima.ae;
 import dimitrov.sum.Summarizer;
 import dimitrov.sum.TermFrequencies;
 import dimitrov.sum.uima.Log10TFIDF;
-import dimitrov.sum.uima.SummarizerUtil;
 import dimitrov.sum.uima.TFIDFComputer;
-import opennlp.uima.util.AnnotatorUtil;
-import opennlp.uima.util.UimaUtil;
+import dimitrov.sum.uima.types.Term;
+import dimitrov.sum.uima.types.Token;
 import org.apache.uima.UimaContext;
-import org.apache.uima.analysis_component.CasAnnotator_ImplBase;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
-import org.apache.uima.cas.*;
-import org.apache.uima.cas.text.AnnotationFS;
+import org.apache.uima.fit.component.JCasAnnotator_ImplBase;
+import org.apache.uima.fit.util.JCasUtil;
+import org.apache.uima.jcas.JCas;
+import org.apache.uima.jcas.cas.FSArray;
 import org.apache.uima.resource.ResourceInitializationException;
-import org.apache.uima.util.Level;
-import org.apache.uima.util.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
- * Created by aleks on 20/01/15.
+ * Created by aleks on 03/02/15.
  */
-public class TFIDFAE extends CasAnnotator_ImplBase {
-    protected Logger log;
+public class TFIDFAE extends JCasAnnotator_ImplBase {
+    protected static final Logger log = LoggerFactory.getLogger(TFIDFAE.class);
 
-    private UimaContext context;
-    private Type tokenType;
-    private Type termFrequencyType;
-    private Feature termFrequencyFeature;
-    private Feature termSurfaceFeature;
     private TermFrequencies<String,TermFrequency.TermFreqRecord> documentFrequencies;
-    private Feature tfidfFeature;
-
     private TFIDFComputer tfidfComputer;
 
+    /**
+     * This method should be overriden by subclasses. Inputs a JCAS to the AnalysisComponent. The
+     * AnalysisComponent "owns" this JCAS until such time as {@link #hasNext()} is called and returns
+     * false (see {@link org.apache.uima.analysis_component.AnalysisComponent} for details).
+     *
+     * @param aJCas a JCAS that this AnalysisComponent should process.
+     * @throws org.apache.uima.analysis_engine.AnalysisEngineProcessException if a problem occurs during processing
+     */
     @Override
-    @SuppressWarnings("unchecked") // Since we're deserializing a collection.
-    public void initialize(UimaContext context) throws ResourceInitializationException {
-        super.initialize(context);
-        log = context.getLogger();
-        this.context = context;
-
-        // Deserialize the term frequencies from a file
-        try (final InputStream file = new FileInputStream(Summarizer.termFrequencySerializationFile);
-             final InputStream buffer = new BufferedInputStream(file);
-             final ObjectInput input = new ObjectInputStream(buffer)
-        ) {
-            log.log(Level.INFO, "Attempting to deserialize term frequency data");
-            final Object tempObject = input.readObject();
-            documentFrequencies = (TermFrequencies) tempObject;
-        } catch (IOException e) {
-            log.log(Level.SEVERE, "Could not read from file " + Summarizer.termFrequencySerializationFile);
-            throw new ResourceInitializationException(e);
-        } catch (ClassNotFoundException e) {
-            log.log(Level.SEVERE, "Could not find class of object in file " + Summarizer.termFrequencySerializationFile);
-            throw new ResourceInitializationException(e);
-        }
-
-        log.log(Level.INFO, "Got termFrequencies with " + documentFrequencies.entrySet().size() + " entries.");
-        final long totalDocumentCount = documentFrequencies.entrySet().stream()
-                .flatMap(entry -> entry.getValue().stream().map(TermFrequency.TermFreqRecord::getDocumentURI))
-                .distinct().count();
-
-        this.tfidfComputer = new Log10TFIDF(totalDocumentCount);
-
-        log = context.getLogger();
-        log.log(Level.INFO, "Initialized TFIDFAE.");
-    }
-
-    @Override
-    public void process(CAS aCAS) throws AnalysisEngineProcessException {
-        log.log(Level.INFO, "Starting processing of TFIDFAE.");
+    public void process(JCas aJCas) throws AnalysisEngineProcessException {
+        log.info("Starting processing of TFIDFAE");
         final Map<String, Double> tfidfs = new HashMap<>();
-        final FSIndex<AnnotationFS> termIndex = aCAS.getAnnotationIndex(termFrequencyType);
-        termIndex.forEach(term -> computeTFIDF(term, tfidfs));
-        final FSIndex<AnnotationFS> tokenIndex = aCAS.getAnnotationIndex(tokenType);
-        tokenIndex.forEach(token -> setTFIDFFeature(tfidfs, token));
+        JCasUtil.iterator(aJCas, Term.class)
+                .forEachRemaining(term -> {
+                    final Double tfidf = computeTFIDF(term, tfidfs);
+                    final FSArray observations = term.getObservations();
+                    // FSArrays are not collections :-(
+                    for (int i = 0; i < observations.size(); i++) {
+                        final Token t = (Token) observations.get(i);
+                        t.setTfidf(tfidf);
+                    }
+                });
     }
 
-    private void setTFIDFFeature(Map<String, Double> tfidfs, AnnotationFS token) {
-        final Double tfidf = tfidfs.get(token.getCoveredText());
-        if (tfidf == null) {
-            log.log(Level.SEVERE, "Could not get tfidf for token: " + token.getCoveredText());
-            // setting it to one: if it's not in the doc collection, it has to be at least a little special.
-            token.setDoubleValue(tfidfFeature, 1d);
-        } else {
-            token.setDoubleValue(tfidfFeature, tfidf);
-            if (log.isLoggable(Level.FINE)) {
-                log.log(Level.FINE, "tfidf for "+token.getCoveredText()+" is "+tfidf+".");
-            }
-        }
-    }
-
-    private void computeTFIDF(final AnnotationFS term, final Map<String, Double> tfidfs) {
-        final String surface = term.getStringValue(termSurfaceFeature);
-        final int termFrequency = term.getIntValue(termFrequencyFeature);
+    private Double computeTFIDF(final Term term, final Map<String, Double> tfidfs) {
+        final String surface = term.getSurface();
+        final int termFrequency = term.getCasFrequency();
         final Optional<List<TermFrequency.TermFreqRecord>> termFreqRecords = documentFrequencies.get(surface);
         final long documentFrequency;
         if (termFreqRecords.isPresent())
             documentFrequency = termFreqRecords.get().size();
         else
             documentFrequency = 0;
+
         final Double tfidf = tfidfComputer.computeTFIDF(termFrequency, documentFrequency);
         tfidfs.put(surface, tfidf);
+        return tfidf;
     }
 
     @Override
-    public void typeSystemInit(TypeSystem typeSystem) throws AnalysisEngineProcessException {
-        log.log(Level.INFO, "Initializing type system.");
-        tokenType = AnnotatorUtil.getRequiredTypeParameter(this.context, typeSystem, UimaUtil.TOKEN_TYPE_PARAMETER);
-        termFrequencyType = AnnotatorUtil.getRequiredTypeParameter
-                (this.context, typeSystem, SummarizerUtil.TERM_TYPE_PARAMETER);
-        termFrequencyFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
-                SummarizerUtil.TERM_FREQUENCY_FEATURE_PARAMETER, CAS.TYPE_NAME_INTEGER);
-        termSurfaceFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
-                SummarizerUtil.TERM_SURFACE_FEATURE_PARAMETER, CAS.TYPE_NAME_STRING);
-        tfidfFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.tokenType,
-                SummarizerUtil.TFIDF_FEATURE_PARAMETER, CAS.TYPE_NAME_DOUBLE);
-        log.log(Level.FINE, "Finished initializing type system.");
+    @SuppressWarnings("unchecked") // Since we're reading a Collection as an object file.
+    public void initialize(UimaContext context) throws ResourceInitializationException {
+        super.initialize(context);
+        // Deserialize the term frequencies from a file
+        try (final InputStream file = new FileInputStream(Summarizer.termFrequencySerializationFile);
+             final InputStream buffer = new BufferedInputStream(file);
+             final ObjectInput input = new ObjectInputStream(buffer)
+        ) {
+            log.info("Attempting to deserialize term frequency data");
+            final Object tempObject = input.readObject();
+            documentFrequencies = (TermFrequencies) tempObject;
+        } catch (IOException e) {
+            log.error("Could not read from file {}.", Summarizer.termFrequencySerializationFile);
+            throw new ResourceInitializationException(e);
+        } catch (ClassNotFoundException e) {
+            log.error("Could not find class of object in file {}.", Summarizer.termFrequencySerializationFile);
+            throw new ResourceInitializationException(e);
+        }
+
+        log.info("Got termFrequencies with {} entries.", documentFrequencies.entrySet().size());
+        final long totalDocumentCount = documentFrequencies.entrySet().stream()
+                .flatMap(entry -> entry.getValue().stream().map(TermFrequency.TermFreqRecord::getDocumentURI))
+                .distinct().count();
+        this.tfidfComputer = new Log10TFIDF(totalDocumentCount);
     }
 }
