@@ -49,14 +49,14 @@
 			<nameValuePair>
 				<name>opennlp.uima.SentenceType</name>
 				<value>
-					<string>opennlp.uima.Sentence</string>
+					<string>dimitrov.sum.uima.types.Sentence</string>
 				</value>
 			</nameValuePair>
 		</configurationParameterSettings>
 		
 		<typeSystemDescription>
 			<imports>
-				<import location="internal:opennlp/TypeSystem.xml" />
+				<import location="internal:SummarizerTypes.xml" />
 			</imports>
 		</typeSystemDescription>
 		

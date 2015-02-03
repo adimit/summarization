@@ -8,6 +8,7 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -17,7 +18,7 @@ public class LocalSourceInfo {
     protected static final Logger log = LoggerFactory.getLogger(LocalSourceInfo.class);
 
     private URI uri;
-    public final int documentSize;
+    public final long documentSize;
     public final boolean documentIsGeneric;
 
     private static int genericFileCounter = 1;
@@ -47,7 +48,7 @@ public class LocalSourceInfo {
                 log.error("Malformed URI in SourceDocInfo: {}", uriString);
             }
 
-            this.documentSize = srcDocInfoFs.getIntValue(documentSizeFeat);
+            this.documentSize = srcDocInfoFs.getLongValue(documentSizeFeat);
             this.documentIsGeneric = false;
         } else {
             this.uri = makeGenericURI();

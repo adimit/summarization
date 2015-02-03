@@ -76,25 +76,25 @@
 			<nameValuePair>
 				<name>opennlp.uima.TokenType</name>
 				<value>
-					<string>opennlp.uima.Token</string>
+					<string>dimitrov.sum.uima.types.Token</string>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
 				<name>opennlp.uima.SentenceType</name>
 				<value>
-					<string>opennlp.uima.Sentence</string>
+					<string>dimitrov.sum.uima.types.Sentence</string>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
 				<name>opennlp.uima.ParseType</name>
 				<value>
-					<string>opennlp.uima.Parse</string>
+					<string>dimitrov.sum.uima.types.Parse</string>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
 				<name>opennlp.uima.TypeFeature</name>
 				<value>
-					<string>type</string>
+					<string>nodeType</string>
 				</value>
 			</nameValuePair>
 			<nameValuePair>
@@ -113,7 +113,7 @@
 		
 		<typeSystemDescription>
 			<imports>
-				<import location="internal:opennlp/TypeSystem.xml" />
+				<import location="internal:SummarizerTypes.xml" />
 			</imports>
 		</typeSystemDescription>
 		

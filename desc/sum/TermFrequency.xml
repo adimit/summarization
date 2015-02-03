@@ -44,13 +44,13 @@
             <nameValuePair>
                 <name>opennlp.uima.TokenType</name>
                 <value>
-                    <string>opennlp.uima.Token</string>
+                    <string>dimitrov.sum.uima.types.Token</string>
                 </value>
             </nameValuePair>
             <nameValuePair>
                 <name>dimitrov.sum.TermType</name>
                 <value>
-                    <string>dimitrov.sum.Term</string>
+                    <string>dimitrov.sum.uima.types.Term</string>
                 </value>
             </nameValuePair>
             <nameValuePair>
@@ -74,7 +74,7 @@
         </configurationParameterSettings>
         <typeSystemDescription>
             <imports>
-                <import location="internal:opennlp/TypeSystem.xml" />
+                <import location="internal:SummarizerTypes.xml" />
             </imports>
         </typeSystemDescription>
         <capabilities>
