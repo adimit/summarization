@@ -4,13 +4,15 @@ import dimitrov.sum.Summarizer;
 import dimitrov.sum.TermFrequencies;
 import dimitrov.sum.uima.SummarizerUtil;
 import dimitrov.sum.uima.types.SourceDocumentInformation;
-import opennlp.uima.util.AnnotatorUtil;
-import opennlp.uima.util.UimaUtil;
+import dimitrov.sum.uima.types.Term;
+import dimitrov.sum.uima.types.Token;
 import org.apache.uima.UimaContext;
-import org.apache.uima.analysis_component.CasAnnotator_ImplBase;
 import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
-import org.apache.uima.cas.*;
 import org.apache.uima.cas.text.AnnotationFS;
+import org.apache.uima.fit.component.JCasAnnotator_ImplBase;
+import org.apache.uima.fit.util.JCasUtil;
+import org.apache.uima.jcas.JCas;
+import org.apache.uima.jcas.cas.FSArray;
 import org.apache.uima.resource.ResourceConfigurationException;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Level;
@@ -24,19 +26,12 @@ import java.util.Map;
 /**
  * Created by aleks on 05/12/14.
  */
-public class TermFrequency extends CasAnnotator_ImplBase {
+public class TermFrequency extends JCasAnnotator_ImplBase {
 
     protected UimaContext context;
     protected Logger log;
 
-    private Type tokenType;
-    private Type termFrequencyType;
-    private Feature termFrequencyFeature;
-    private Feature termSurfaceFeature;
-    private Feature termObservationsFeature;
-
     private TermFrequencies<String,TermFreqRecord> documentFrequencies;
-
 
     @Override
     public void initialize(UimaContext context) throws ResourceInitializationException {
@@ -67,56 +62,32 @@ public class TermFrequency extends CasAnnotator_ImplBase {
      * @throws org.apache.uima.analysis_engine.AnalysisEngineProcessException if a problem occurs during processing
      */
     @Override
-    public void process(CAS aCAS) throws AnalysisEngineProcessException {
+    public void process(JCas aCAS) throws AnalysisEngineProcessException {
         final TermFrequencies<String, AnnotationFS> tf = new TermFrequencies<>();
         final SourceDocumentInformation sourceInfo;
-        try {
-            sourceInfo = SummarizerUtil.getJCasSourceDocumentInformation(aCAS.getJCas());
-        } catch (CASException e) {
-            log.log(Level.SEVERE, "Couldn't get JCas!");
-            throw new AnalysisEngineProcessException(e);
-        }
+        sourceInfo = SummarizerUtil.getJCasSourceDocumentInformation(aCAS);
 
         log.log(Level.INFO, "Starting Term Frequency annotation.");
-        final FSIndex<AnnotationFS> tokens = aCAS.getAnnotationIndex(tokenType);
-        tokens.forEach(token -> tf.observe(token.getCoveredText(), token));
+        JCasUtil.iterator(aCAS, Token.class).forEachRemaining(token -> tf.observe(token.getCoveredText(), token));
         tf.entrySet().forEach(observation ->
                 recordObservationInCas(aCAS, observation.getKey(), observation.getValue(), sourceInfo.getUri()));
         log.log(Level.INFO, "Finished Term Frequency annotation.");
     }
 
-    private void recordObservationInCas(final CAS aCAS, final String term,
+    private void recordObservationInCas(final JCas aCAS, final String term,
                                         final List<AnnotationFS> observations, final String docUri) {
-        // new Feature structure
-        final AnnotationFS tfAnnotation = aCAS.createAnnotation(termFrequencyType,0,0);
-        // Set term
-        tfAnnotation.setStringValue(termSurfaceFeature, term);
-        // Set frequency
+        final Term tfAnnotation = new Term(aCAS);
+        tfAnnotation.setSurface(term);
         final int frequency = observations.size();
-        tfAnnotation.setIntValue(termFrequencyFeature, frequency);
+        tfAnnotation.setCasFrequency(frequency);
         final int numObs = observations.size();
-        final ArrayFS observationsFS = aCAS.createArrayFS(numObs);
-        final FeatureStructure[] observationsArr = new FeatureStructure[numObs];
+        final FSArray observationsFS = new FSArray(aCAS, numObs);
+        final AnnotationFS[] observationsArr = new AnnotationFS[numObs];
         observations.toArray(observationsArr);
-        observationsFS.copyFromArray(observationsArr,0,0,numObs);
-        tfAnnotation.setFeatureValue(termObservationsFeature, observationsFS);
-        aCAS.addFsToIndexes(tfAnnotation);
+        observationsFS.copyFromArray(observationsArr, 0, 0, numObs);
+        tfAnnotation.setObservations(observationsFS);
+        tfAnnotation.addToIndexes();
         documentFrequencies.observe(term,new TermFreqRecord(numObs, docUri));
-    }
-
-    @Override
-    public void typeSystemInit(TypeSystem typeSystem) throws AnalysisEngineProcessException {
-        log.log(Level.INFO, "Initializing type system.");
-        tokenType = AnnotatorUtil.getRequiredTypeParameter(this.context, typeSystem, UimaUtil.TOKEN_TYPE_PARAMETER);
-        termFrequencyType = AnnotatorUtil.getRequiredTypeParameter
-                (this.context, typeSystem, SummarizerUtil.TERM_TYPE_PARAMETER);
-        termFrequencyFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
-                SummarizerUtil.TERM_FREQUENCY_FEATURE_PARAMETER, CAS.TYPE_NAME_INTEGER);
-        termSurfaceFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
-                SummarizerUtil.TERM_SURFACE_FEATURE_PARAMETER, CAS.TYPE_NAME_STRING);
-        termObservationsFeature = AnnotatorUtil.getRequiredFeatureParameter(this.context, this.termFrequencyType,
-                SummarizerUtil.TERM_OBSERVATIONS_FEATURE_PARAMETER, CAS.TYPE_NAME_FS_ARRAY);
-        log.log(Level.INFO, "Finished initializing type system.");
     }
 
     @Override
