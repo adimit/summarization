@@ -100,18 +100,18 @@ public class Summarizer {
                                                  String fileURL, String externalResourceKey,
                                                  ResourceManagerConfiguration rmConfig) {
 
-        final ExternalResourceDescription sentenceModel = new ExternalResourceDescription_impl();
-        sentenceModel.setImplementationName(implementationName);
-        sentenceModel.setName(resourceName);
-        final FileResourceSpecifier sentModelSpec = new FileResourceSpecifier_impl();
-        sentModelSpec.setFileUrl(fileURL);
-        sentenceModel.setResourceSpecifier(sentModelSpec);
-        rmConfig.addExternalResource(sentenceModel);
+        final ExternalResourceDescription model = new ExternalResourceDescription_impl();
+        model.setImplementationName(implementationName);
+        model.setName(resourceName);
+        final FileResourceSpecifier modelSpec = new FileResourceSpecifier_impl();
+        modelSpec.setFileUrl(fileURL);
+        model.setResourceSpecifier(modelSpec);
+        rmConfig.addExternalResource(model);
 
-        final ExternalResourceBinding sentBinding = new ExternalResourceBinding_impl();
-        sentBinding.setKey(externalResourceKey + "/opennlp.uima.ModelName");
-        sentBinding.setResourceName(resourceName);
-        rmConfig.addExternalResourceBinding(sentBinding);
+        final ExternalResourceBinding modelBinding = new ExternalResourceBinding_impl();
+        modelBinding.setKey(externalResourceKey + "/opennlp.uima.ModelName");
+        modelBinding.setResourceName(resourceName);
+        rmConfig.addExternalResourceBinding(modelBinding);
 
     }
 
