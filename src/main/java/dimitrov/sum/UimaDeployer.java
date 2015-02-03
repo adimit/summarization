@@ -92,6 +92,7 @@ public class UimaDeployer implements Runnable {
         log.info("Initializing Collection Reader");
         final CollectionReaderDescription cd = CollectionReaderFactory.createReaderDescription(
                 DocumentReader.class,
+                settings.getTypeSystemDesc(),
                 DocumentReader.PARAM_INPUTDIR, settings.inputDir,
                 DocumentReader.PARAM_READ_PLAIN_TEXT, settings.readPlainText);
 

@@ -1,9 +1,13 @@
 package dimitrov.sum;
 
+import org.apache.uima.fit.factory.TypeSystemDescriptionFactory;
+import org.apache.uima.resource.metadata.TypeSystemDescription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Properties;
 
 /**
@@ -23,6 +27,7 @@ public class DeployerSettings {
     public static final String PROP_INPUT_DIRECTORY = "inputDirectory";
     public static final String PROP_AGGREGATE = "aggregateDescriptor";
     public static final String PROP_FS_HEAP_SIZE = "fsHeapSize";
+    public static final String PROP_TYPE_SYSTEM_URL = "typeSystem";
 
     // Defaults for settings
     private static final int DEFAULT_CAS_POOL_SIZE = 1;
@@ -51,6 +56,8 @@ public class DeployerSettings {
 
     private final Properties settings;
 
+    private final TypeSystemDescription typeSystemDesc;
+
     DeployerSettings(final Properties settings, final String phase) {
         this.phase = phase;
         this.settings = settings;
@@ -68,6 +75,8 @@ public class DeployerSettings {
         this.endpointName = phase;
 
         // Mandatory settings
+        final String typeSystemSetting = set(PROP_TYPE_SYSTEM_URL);
+        this.typeSystemDesc = TypeSystemDescriptionFactory.createTypeSystemDescription(typeSystemSetting);
         this.aggregateAE = set(PROP_AGGREGATE);
         this.brokerUrl = set(PROP_BROKER_URL);
         this.serializationStrategy = getProperty(PROP_SERIALIZATION_STRAT, "xmi");
@@ -79,6 +88,8 @@ public class DeployerSettings {
             Summarizer.croak("Output path " + outputDirName + " is not a directory or is not writable.");
         }
     }
+
+    public TypeSystemDescription getTypeSystemDesc() { return this.typeSystemDesc; }
 
     private String getProperty(final String pName) {
         final String phaseProperty = this.settings.getProperty(phase + "." + pName);

@@ -177,28 +177,6 @@ public class Summarizer {
                 rmConfig
         );
 
-        final AnalysisEngineDescription phase1AEDesc = makeAggregate("Phase1", phase1Components, rmConfig);
-        final File phase1Xml = writeDescriptor(phase1AEDesc, "phase1");
-
-        final URL dictionaryURL = new URL("internal:extjwnl_resource_properties.xml");
-        final ExternalResourceDescription wnModel = ExternalResourceFactory.createExternalResourceDescription
-                (WordNetModelResource.class, dictionaryURL);
-
-        final List<AnalysisEngineDescription> phase2AEs = new LinkedList<>();
-        final TypeSystemDescription opennlpTypeSystem = TypeSystemDescriptionFactory.createTypeSystemDescriptionFromPath("internal:opennlp/TypeSystem.xml");
-        phase2AEs.add(AnalysisEngineFactory.createEngineDescription(TFIDFAE.class, opennlpTypeSystem,
-                UimaUtil.TOKEN_TYPE_PARAMETER, "opennlp.uima.Token",
-                Names.TERM_TYPE_PARAMETER, "dimitrov.sum.Term",
-                Names.TFIDF_FEATURE_PARAMETER, "tfidf",
-                Names.TERM_SURFACE_FEATURE_PARAMETER, "surface",
-                Names.TERM_FREQUENCY_FEATURE_PARAMETER, "casFrequency",
-                Names.TERM_OBSERVATIONS_FEATURE_PARAMETER, "observations"));
-        phase2AEs.add(AnalysisEngineFactory.createEngineDescription(WordNet.class, opennlpTypeSystem,
-                WordNet.WORD_NET_RESOURCE_KEY, wnModel));
-
-        final AnalysisEngineDescription phase2AEDesc = makeAggregatePrime("Phase2", phase2AEs);
-        final File phase2Xml = writeDescriptor(phase2AEDesc, "phase2");
-
         final Properties properties = new Properties();
         try (final InputStream is = ClassLoader.getSystemResourceAsStream(SETTINGS_FILE)) {
             if (is == null)
@@ -208,7 +186,29 @@ public class Summarizer {
             croak(e, "CRITICAL: Couldn't load properties at " + SETTINGS_FILE);
         }
 
+        final AnalysisEngineDescription phase1AEDesc = makeAggregate("Phase1", phase1Components, rmConfig);
+        final File phase1Xml = writeDescriptor(phase1AEDesc, "phase1");
+
+        final URL dictionaryURL = new URL("internal:extjwnl_resource_properties.xml");
+        final ExternalResourceDescription wnModel = ExternalResourceFactory.createExternalResourceDescription
+                (WordNetModelResource.class, dictionaryURL);
+
         final DeployerSettings phase1Settings = new DeployerSettings(properties, "phase1");
+
+        final List<AnalysisEngineDescription> phase2AEs = new LinkedList<>();
+        phase2AEs.add(AnalysisEngineFactory.createEngineDescription(TFIDFAE.class, phase1Settings.getTypeSystemDesc(),
+                UimaUtil.TOKEN_TYPE_PARAMETER, "dimitrov.sum.uima.types.Token",
+                Names.TERM_TYPE_PARAMETER, "dimitrov.sum.uima.types.Term",
+                Names.TFIDF_FEATURE_PARAMETER, "tfidf",
+                Names.TERM_SURFACE_FEATURE_PARAMETER, "surface",
+                Names.TERM_FREQUENCY_FEATURE_PARAMETER, "casFrequency",
+                Names.TERM_OBSERVATIONS_FEATURE_PARAMETER, "observations"));
+        phase2AEs.add(AnalysisEngineFactory.createEngineDescription(WordNet.class, phase1Settings.getTypeSystemDesc(),
+                WordNet.WORD_NET_RESOURCE_KEY, wnModel));
+
+        final AnalysisEngineDescription phase2AEDesc = makeAggregatePrime("Phase2", phase2AEs);
+        final File phase2Xml = writeDescriptor(phase2AEDesc, "phase2");
+
 
         BrokerService brokerService = null;
         if (phase1Settings.useEmbeddedBroker) {

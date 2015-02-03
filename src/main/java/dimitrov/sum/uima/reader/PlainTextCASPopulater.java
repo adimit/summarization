@@ -2,7 +2,7 @@ package dimitrov.sum.uima.reader;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.uima.collection.CollectionException;
-import org.apache.uima.examples.SourceDocumentInformation;
+import dimitrov.sum.uima.types.SourceDocumentInformation;
 import org.apache.uima.jcas.JCas;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -43,7 +43,7 @@
             <supertypeName>uima.tcas.Annotation</supertypeName>
             <features>
                 <featureDescription>
-                    <name>type</name>
+                    <name>nodeType</name>
                     <description>Type of the parse node</description>
                     <rangeTypeName>uima.cas.String</rangeTypeName>
                 </featureDescription>
@@ -60,7 +60,7 @@
             </features>
         </typeDescription>
         <typeDescription>
-            <name>dimitrov.sum.Term</name>
+            <name>dimitrov.sum.uima.types.Term</name>
             <supertypeName>uima.tcas.Annotation</supertypeName>
             <features>
                 <featureDescription>

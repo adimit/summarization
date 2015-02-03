@@ -28,7 +28,7 @@ public class LocalSourceInfo {
     public LocalSourceInfo(final CAS cas) {
 
         final Type srcDocInfoType = cas.getTypeSystem()
-                .getType("org.apache.uima.examples.SourceDocumentInformation");
+                .getType("dimitrov.sum.uima.types.SourceDocumentInformation");
         FSIterator<FeatureStructure> it = null;
         if (srcDocInfoType != null) {
             it = cas.getIndexRepository().getAllIndexedFS(srcDocInfoType);
