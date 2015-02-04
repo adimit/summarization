@@ -26,6 +26,17 @@
                     <rangeTypeName>uima.cas.Double</rangeTypeName>
                 </featureDescription>
                 <featureDescription>
+                    <name>synsets</name>
+                    <description>The synsets associated with the senses of this word.</description>
+                    <rangeTypeName>uima.cas.FSArray</rangeTypeName>
+                </featureDescription>
+            </features>
+        </typeDescription>
+        <typeDescription>
+            <name>dimitrov.sum.uima.types.SenseSynset</name>
+            <supertypeName>uima.tcas.Annotation</supertypeName>
+            <features>
+                <featureDescription>
                     <name>synset</name>
                     <description>Set of WordNet synonyms.</description>
                     <rangeTypeName>uima.cas.StringArray</rangeTypeName>

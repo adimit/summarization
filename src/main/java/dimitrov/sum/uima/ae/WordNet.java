@@ -1,5 +1,6 @@
 package dimitrov.sum.uima.ae;
 
+import dimitrov.sum.uima.types.SenseSynset;
 import dimitrov.sum.uima.types.Token;
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.*;
@@ -10,13 +11,15 @@ import org.apache.uima.fit.component.JCasAnnotator_ImplBase;
 import org.apache.uima.fit.descriptor.ExternalResource;
 import org.apache.uima.fit.util.JCasUtil;
 import org.apache.uima.jcas.JCas;
+import org.apache.uima.jcas.cas.FSArray;
 import org.apache.uima.jcas.cas.StringArray;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by aleks on 25/01/15.
@@ -48,32 +51,43 @@ public class WordNet extends JCasAnnotator_ImplBase{
     @Override
     public void process(JCas aJCas) throws AnalysisEngineProcessException {
         log.info("WordNet annotation engine processing…");
+        final Map<IndexWord, FSArray> senseFlyweights = new HashMap<>();
+        final FSArray emptySenses = new FSArray(aJCas, 0);
+
         JCasUtil.iterator(aJCas, Token.class).forEachRemaining(token -> {
             try {
-                final IndexWordSet indexWords = dictionary.lookupAllIndexWords (token.getCoveredText());
-                final List<Synset> senses = disambiguate(indexWords, token.getPos());
-                final String[] words;
-                if (senses == null) {
-                    // If WordNet draws a blank, just use the word as-is
-                    log.debug("WordNet doesn't know about '{}'. No synset generated.", token.getCoveredText());
-                    words = new String[]{ token.getCoveredText() };
-                } else {
-                    // We don't do word sense disambiguation. Just concatenate the synsets. Yup, that's bad.
-                    if (log.isDebugEnabled() && senses.size() > 1) {
-                        log.warn("Token '{}' has more than one sense. WSD NYI!", token.getCoveredText());
-                    }
+                final IndexWordSet indexWords = dictionary.lookupAllIndexWords(token.getCoveredText());
+                final IndexWord indexWord = disambiguate(indexWords, token.getPos());
 
-                    List<String> bigSynset = new LinkedList<String>();
-                    senses.forEach(synset -> synset.getWords().forEach(word -> bigSynset.add(word.getLemma())));
-                    words = new String[bigSynset.size()];
-                    bigSynset.toArray(words);
-                    log.debug("Synset for '{}': {}.", token.getCoveredText(), words);
+                if (indexWord == null) {
+                    token.setSynsets(emptySenses);
+                } else {
+                    final FSArray cachedFS = senseFlyweights.get(indexWord);
+                    if (cachedFS == null) {
+                        final List<Synset> senses = indexWord.getSenses();
+                        final FSArray sensesFS = new FSArray(aJCas, senses.size());
+                        int i = 0;
+                        for (Synset synset:senses) {
+                            final List<Word> wordList = synset.getWords();
+                            final String[] words = wordList.stream().map(Word::getLemma).toArray(String[]::new);
+                            final StringArray wordsFS  = new StringArray(aJCas, wordList.size());
+                            wordsFS.copyFromArray(words, 0,0, words.length);
+                            final SenseSynset senseSynsetFS = new SenseSynset(aJCas);
+                            senseSynsetFS.setSynset(wordsFS);
+                            senseSynsetFS.addToIndexes();
+                            sensesFS.set(i, senseSynsetFS);
+                            i++;
+                        }
+                        log.debug("Generated new synset for {}.", token.getCoveredText());
+                        token.setSynsets(sensesFS);
+                        senseFlyweights.put(indexWord, sensesFS);
+                    } else {
+                        log.debug("Using cached synsets for {}.", token.getCoveredText());
+                        token.setSynsets(cachedFS);
+                    }
                 }
-                final StringArray stringArray = new StringArray(aJCas, words.length);
-                stringArray.copyFromArray(words, 0, 0, words.length);
-                token.setSynset(stringArray);
             } catch (JWNLException e) {
-                log.warn("Failed to generate synset for '{}'.", token.getCoveredText(), e);
+                log.error("Failed to generate synset for '{}'.", token.getCoveredText(), e);
             }
         });
     }
@@ -92,23 +106,11 @@ public class WordNet extends JCasAnnotator_ImplBase{
             return null;
     }
 
-    private List<Synset> disambiguate(IndexWordSet indexWords, String openNLPPos) {
-        if (indexWords.size() == 1) {
-            return indexWords.getIndexWordArray()[0].getSenses();
-        } else if (indexWords.size() == 0) {
+    private IndexWord disambiguate(IndexWordSet indexWords, String openNLPPos) {
+        final POS jwnlPOS = translatePOS(openNLPPos);
+        if (jwnlPOS == null || indexWords.size() == 0)
             return null;
-        } else {
-            final POS jwnlPOS = translatePOS(openNLPPos);
-            if (jwnlPOS == null) {
-                return null;
-            }
-
-            final IndexWord iw = indexWords.getIndexWord(jwnlPOS);
-            if (iw == null) {
-                return null;
-            } else {
-                return iw.getSenses();
-            }
-        }
+        else
+            return indexWords.getIndexWord(jwnlPOS);
     }
 }
